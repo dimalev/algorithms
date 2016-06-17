@@ -1,0 +1,9 @@
+description = "hackerrank task about robot saving princess"
+
+apply plugin: "java"
+
+jar {
+    manifest {
+        attributes("Main-Class": "Solution")
+    }
+}

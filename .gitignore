@@ -1,3 +1,5 @@
 *.o
 #*#
 *.class
+.gradle/
+build/
