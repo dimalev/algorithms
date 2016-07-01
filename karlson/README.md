@@ -4,15 +4,21 @@ there is a line of 0s and 1s. we must find minimal count of breaks to generate
 lines of 0s, or, if line contains 1 - it must be the only one in it, and must
 be in center:
 
-```0001000```
+```
+0001000
+```
 
 # sample
 
-```01001001000000001001001000```
+```
+01001001000000001001001000
+```
 
 with 7 breaks:
 
-```010 (1) 010 (2) 010 (3) 00000 (4) 00100 (5) 1 (6) 00100 (7) 0```
+```
+010 (1) 010 (2) 010 (3) 00000 (4) 00100 (5) 1 (6) 00100 (7) 0
+```
 
 # input
 
@@ -33,7 +39,9 @@ maximum number of 0s which will surround it after break.
 for each incoming new 1 - i generate numbers of white cells i can dedicate to
 next 1, together with number of breaks i will need for this:
 
-```{ min=3, max=5, count=4 }```
+```
+{ min=3, max=5, count=4 }
+```
 
 will mean that from 3 to 5 white cells can be generated with 4 breaks. with
 this information from previous break - i can generate new information for next
