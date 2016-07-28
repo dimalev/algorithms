@@ -1,0 +1,18 @@
+processing: 5-6
+put first slice 
+processing: 13-16
+push into end
+processing: 3-7
+outer slice 
+push back slice 13 7
+processing: 11-17
+outer slice 
+push into end
+processing: 2-8
+outer slice 
+push back slice 11 8
+processing: 10-20
+outer slice 
+push into end
+processing complete
+2 8, 10 20, 
