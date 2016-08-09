@@ -1,5 +1,7 @@
 *.o
 #*#
 *.class
+*/log.txt
+*/output.txt
 .gradle/
 build/

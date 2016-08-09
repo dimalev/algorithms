@@ -1,0 +1,33 @@
+6
+5
+Red square,Colosseum,Sacre Coeur,Louvre,Z
+Colosseum,Louvre,The Hermitage,Red square,X
+Colosseum
+Louvre,Red square,Stonehenge,Colosseum,Y
+Colosseum
+6
+Red square
+Colosseum
+Red square,Colosseum
+Louvre,Red square
+Louvre
+Louvre
+3
+Sacre Coeur,The Hermitage
+Stonehenge,Versailles,Louvre
+Louvre,Stonehenge
+3
+Sacre Coeur,The Hermitage,Louvre
+Sacre Coeur
+Sacre Coeur,Louvre
+5
+Sacre Coeur,The Hermitage
+The Hermitage
+Stonehenge,Versailles,Louvre
+Versailles
+Louvre,Stonehenge
+4
+Stonehenge
+Louvre
+Versailles
+Louvre
