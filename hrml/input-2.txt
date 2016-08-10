@@ -1,0 +1,11 @@
+1 9
+<tag1 value="HelloWorld"><tag2 name="Name1"></tag2><tag3 name="Name1" dima="alina"></tag3><tag4 name="Name1">  <tag5 name="Name1" ivan =  "diana" ></tag5></tag4></tag1>
+tag1.tag2~name
+tag1~name
+tag1~value
+tag2~name
+tag1.tag3~dima
+tag1.tag4.tag5~ivan
+tag1.tag4.tag5~iv
+tag~value
+tag1~val

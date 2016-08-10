@@ -1,0 +1,5 @@
+1 3
+<fx1><fx2><fx3><fx4 z = "1"></fx4></fx3></fx2></fx1>
+fx~b
+some bad invalid line fx~z
+fx1.fx2.fx3.fx4~z
