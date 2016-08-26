@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
+#include <set>
 #include <algorithm>
+#include <cstring>
 
 const int N_MAX = 100000;
 
@@ -8,12 +10,18 @@ std::vector<int> links[N_MAX];
 int n, m, p[N_MAX];
 int x;
 
+bool used[N_MAX];
+int arity[N_MAX];
+
 void read() {
   std::cin >> n >> m;
+  std::memset(arity, 0, sizeof(int) * n);
+  std::memset(used, false, sizeof(bool) * n);
   for(int i = 0; i < m; ++i) {
     int u, v;
     std::cin >> u >> v;
     links[u - 1].push_back(v - 1);
+    arity[v - 1]++;
   }
   for(int i = 0; i < n; ++i) {
     int pp;
@@ -57,14 +65,23 @@ void findFirstReplacable() {
 }
 
 void sortTail() {
-  for(int i = n - 2; i > x; --i) {
-    int j = i + 1;
-    while(j < n && p[j] < p[j - 1]) {
-      if(std::binary_search(links[p[j - 1]].begin(), links[p[j - 1]].end(), p[j])) break;
-      int t = p[j];
-      p[j] = p[j - 1];
-      p[j - 1] = t;
-      ++j;
+  for(int i = 0; i <= x; ++i) {
+    for(int v : links[p[i]]) arity[v]--;
+  }
+  std::vector<int> zero;
+  for(int i = x + 1; i < n; ++i) {
+    if(arity[p[i]] == 0) zero.push_back(p[i]);
+  }
+  std::make_heap(zero.begin(), zero.end(), std::greater<int>());
+  for(int z = x + 1; z < n; ++z) {
+    int best = zero.front();
+    std::pop_heap(zero.begin(), zero.end(), std::greater<int>()); zero.pop_back();
+    p[z] = best;
+    for(int v : links[best]) {
+      if(--arity[v] == 0) {
+        zero.push_back(v);
+        std::push_heap(zero.begin(), zero.end(), std::greater<int>());
+      }
     }
   }
 }
