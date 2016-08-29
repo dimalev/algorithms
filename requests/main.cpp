@@ -6,9 +6,12 @@
 
 const int limit = 75000;
 
-int ones[2 * limit];
+int zeroes[262144];
+int all[262144];
 int histo[limit];
 int data[limit];
+
+int maxX = 0;
 
 inline int mid(int l, int r) { return (l + r) / 2; }
 
@@ -19,29 +22,59 @@ inline int max(int a, int b) { return a > b ? a : b; }
 inline int min(int a, int b) { return a > b ? b : a; }
 
 void setup(int id, int l, int r) {
+  if(id > maxX) maxX = id;
   if(l == r) {
-    ones[id] = histo[r];
+    all[id] = histo[r];
+    zeroes[id] = 1 ^ histo[r];
+    // std::cout << id << ": " << l << " -> " << r << " = " << ones[id] << std::endl;
     return;
   }
   setup(left(id), l, mid(l, r));
   setup(right(id), mid(l, r) + 1, r);
-  ones[id] = ones[left(l, r)] + ones[right(l, r)];
+  zeroes[id] = zeroes[left(id)] + zeroes[right(id)];
+  all[id] = -1;
+  // std::cout << id << ": " << l << " -> " << r << " = " << ones[id] << std::endl;
+}
+
+int getNodeCount(int id, int l, int r) {
+  if(all[id] == -1) return zeroes[id];
+  return all[id] == 0 ? r - l + 1 : 0;
+}
+
+void push(int id) {
+  if(all[id] == -1) return;
+  all[right(id)] = all[left(id)] = all[id];
+  all[id] = -1;
 }
 
 int count(int id, int l, int r, int ll, int rr) {
   if(r < ll || rr < l) return 0;
-  if(ll <= l && rr >= r) return ones[id];
+  if(ll <= l && r <= rr) return getNodeCount(id, l, r);
+  push(id);
   return count(left(id), l, mid(l, r), ll, rr) + count(right(id), mid(l, r) + 1, r, ll, rr);
 }
 
 void update(int id, int l, int r, int ll, int mm, int rr) {
-  if(l == r) {
-    if(l <= mm) ones[id] = 1;
-    else ones[id] = 0;
+  if(r < ll || rr < l) return;
+  if(l >= ll && r < mm) {
+    all[id] = 0;
+    return;
   }
+  if(l >= mm && r <= rr) {
+    all[id] = 1;
+    return;
+  }
+  // std::cout << "update: " << id << " (" << l << ", " << r << ") ";
+  // std::cout << "[" << ll << ":" << mm << ":" << rr << "]" << std::endl;
+  if(l == r) {
+    all[id] = l < mm ? 0 : 1;
+    zeroes[id] = l < mm ? 1 : 0;
+    return;
+  }
+  push(id);
   update(left(id), l, mid(l, r), ll, mm, rr);
   update(right(id), mid(l, r) + 1, r, ll, mm, rr);
-  ones[id] = ones[left(id)] + ones[right(id)];
+  zeroes[id] = getNodeCount(left(id), l, mid(l, r)) + getNodeCount(right(id), mid(l, r) + 1, r);
 }
 
 int main() {
@@ -66,18 +99,30 @@ int main() {
   for(int i = 0; i < q; ++i)
     std::cin >> L[i] >> R[i];
 
-  int l = -1, r = n - 1;
+  int l = -1, r = n;
   while(r - l > 1) {
-    int m = (l + r + 1) / 2;
-    int el = vocabulary[m];
-    for(int i = 0; i < n; ++i) histo[i] = data[i] >= el;
+    int m = (l + r) / 2;
+    for(int i = 0; i < n; ++i) histo[i] = data[i] > m ? 1 : 0;
     setup(0, 0, n - 1);
+    // std::cout << "setup(" << vocabulary[m] << ", " << maxX << "): z=";
+    // for(int i = 0; i <= maxX; ++i) std::cout << " " << zeroes[i];
+    // std::cout << " - all=";
+    // for(int i = 0; i <= maxX; ++i) std::cout << " " << all[i];
+    // std::cout << " |" << std::endl;
     for(int i = 0; i < q; ++i) {
-      /*
-        update predicate data
-      */
+      int countZero = count(0, 0, n - 1, L[i], R[i]);
+      // std::cout << L[i] << "-" << R[i] << ": " << countZero << std::endl;
+      update(0, 0, n - 1, L[i], L[i] + countZero, R[i]);
+      // std::cout << " - z=";
+      // for(int i = 0; i <= maxX; ++i) std::cout << " " << zeroes[i];
+      // std::cout << " - all=";
+      // for(int i = 0; i <= maxX; ++i) std::cout << " " << all[i];
+      // std::cout << " |" << std::endl;
     }
-    if(pred[k]) l = m; else r = m;
+    int z = count(0, 0, n - 1, k, k);
+    // std::cout << "total zero: " << z << std::endl;
+    if(z == 0) l = m; else r = m;
+    // std::cout << l << " - " << r << std::endl;
   }
 
   std::cout << vocabulary[r] << std::endl;
