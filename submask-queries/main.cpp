@@ -16,23 +16,47 @@ public:
       ++child_it;
     }
     if(children_yield) return;
+    child_it = children.begin();
     while(child_it != children.end()) {
       if(contains(new_child->mask, (*child_it)->mask)) {
-        new_child->add(*child_it);
-        (*child_it)->parents.erase(this);
-        child_it = children.erase(child_it);
-      } else ++child_it;
+        new_child->children.insert(*child_it);
+        (*child_it)->parents.insert(new_child);
+        if(contains(mask, new_child->mask)) {
+#ifdef ALGO_DEBUG
+          std::cerr << " - relinking child " << (*child_it)->mask
+                    << " from " << mask << " to " << new_child->mask << std::endl;
+#endif
+          (*child_it)->parents.erase(this);
+          child_it = children.erase(child_it);
+        } else {
+#ifdef ALGO_DEBUG
+          std::cerr << " - add child " << (*child_it)->mask
+                    << " to " << new_child->mask << std::endl;
+#endif
+          ++child_it;
+        }
+      } else {
+        if((new_child->mask & (*child_it)->mask) != 0) {
+          (*child_it)->add(new_child);
+        }
+        ++child_it;
+      }
     }
-    children.insert(new_child);
-    new_child->parents.insert(this);
+    if(contains(mask, new_child->mask)) {
+#ifdef ALGO_DEBUG
+      std::cerr << " - add new child " << new_child->mask << " to " << mask << std::endl;
+#endif
+      children.insert(new_child);
+      new_child->parents.insert(this);
+    }
   }
 
   sub_array* find(const int &in_mask) {
     if(in_mask == mask) return this;
     std::set<sub_array*>::iterator child_it = children.begin();
-    while(child_it != children.end()) {
-      if(!contains((*child_it)->mask, in_mask)) continue;
-      sub_array *out = (*child_it)->find(in_mask);
+    for(sub_array* child : children) {
+      if(!contains(child->mask, in_mask)) continue;
+      sub_array *out = child->find(in_mask);
       if(out != nullptr) return out;
     }
     return nullptr;
@@ -87,16 +111,21 @@ public:
     }
   }
 
-  bool collect_xor(const int &in_mask, const int &min_order, int &xor_output) {
+  bool collect_xor(const int &in_mask, const int &min_order, const int &current_order, int &xor_output) {
+    if(last_order == current_order) return false;
+    last_order = current_order;
     bool xor_available = false;
     if(viable && order > min_order) {
+#ifdef ALGO_DEBUG
+      std::cerr << " ^" << xor_value << "(" << mask << ")";
+#endif
       xor_output = xor_value;
       xor_available = true;
     }
     for(sub_array *child : children) {
       int new_xor;
       if(contains(child->mask, in_mask)) {
-        if(child->collect_xor(in_mask, min_order, new_xor)) {
+        if(child->collect_xor(in_mask, min_order, current_order, new_xor)) {
           if(xor_available) xor_output ^= new_xor;
           else {
             xor_output = new_xor;
@@ -112,6 +141,7 @@ public:
   int set_value = 0;
   int xor_value;
   int order = -1;
+  int last_order = -1;
   bool viable = false;
   std::set<sub_array*> children;
   std::set<sub_array*> parents;
@@ -195,9 +225,9 @@ int main() {
 #ifdef ALGO_DEBUG
       std::cerr << "Setter value " << set_value << " with order " << set_order << std::endl;
 #endif
-      if(xorrers.collect_xor(mask, set_order, xor_value)) {
+      if(xorrers.collect_xor(mask, set_order, i, xor_value)) {
 #ifdef ALGO_DEBUG
-        std::cerr << "Found xorrers " << xor_value << std::endl;
+        std::cerr << " | Found xorrers " << xor_value << std::endl;
 #endif
         set_value ^= xor_value;
       }
