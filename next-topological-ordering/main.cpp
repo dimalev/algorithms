@@ -31,33 +31,36 @@ void read() {
 }
 
 void findFirstReplacable() {
-  std::vector<std::pair<int, int>> free;
-  free.push_back(std::pair<int, int>(p[n - 1], n - 1));
-  std::sort(links[p[n - 1]].begin(), links[p[n - 1]].end());
+  std::set<int> free;
+  bool used[n];
+  int best = p[n - 1];
+  std::memset(used, false, n * sizeof(bool));
+  free.insert(p[n - 1]);
+  used[p[n - 1]] = true;
   for(int i = n - 2; i >= 0; --i) {
-    std::sort(links[p[i]].begin(), links[p[i]].end());
-    auto free_end = std::remove_if(free.begin(), free.end(), [&](std::pair<int, int> pp) -> bool {
-        return std::binary_search(links[p[i]].begin(), links[p[i]].end(), pp.first);
-      });
-    if(free_end != free.end()) free.resize(std::distance(free.begin(), free_end));
-    std::sort(free.begin(), free.end(), [](std::pair<int, int> left, std::pair<int, int> right) -> bool {
-        return right.first < left.first;
-      });
-    int sz = free.size();
-    // std::cout << (p[i] + 1) << ":";
-    // for(int j = 0; j < sz; ++j) std::cout << " " << (free[j].first + 1);
-    // std::cout << std::endl;
-    if(sz == 0 || free[0].first < p[i]) {
-      free.push_back(std::pair<int, int>(p[i], i));
+    for(int v : links[p[i]]) {
+      if(used[v]) {
+        free.erase(v);
+        if(best == v) best = -1;
+        used[v] = false;
+      }
+    }
+    if(best == -1) best = *std::max_element(free.begin(), free.end());
+    if(free.size() == 0 || best < p[i]) {
+      free.insert(p[i]);
+      used[p[i]] = true;
+      if(p[i] > best) best = p[i];
       continue;
     }
-    int k = 0;
-    while(k < sz - 1 && free[k + 1].first > p[i]) ++k;
-    int free_vert = free[k].first;
-    int free_id = free[k].second;
-    // std::cout << free_id << " = " << (free_vert + 1) << std::endl;
-    for(int j = free_id; j > i; --j) p[j] = p[j - 1];
-    p[i] = free_vert;
+    for(int k : free) if(k > p[i] && k < best) best = k;
+    int best_ind;
+    for(int k = i + 1; k < n; ++k)
+      if(p[k] == best) {
+        best_ind = k;
+        break;
+      }
+    p[best_ind] = p[i];
+    p[i] = best;
     x = i;
     return;
   }

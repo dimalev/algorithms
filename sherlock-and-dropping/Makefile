@@ -11,6 +11,3 @@ output-*: $(subst output,input,$@)
   echo -e "\nOutput:" && cat output.txt && \
   echo -e "\n\nLog:\n" && cat log.txt && \
   echo -e "\nDiff:" && diff -w output.txt $@ && echo -e "\nTest OK"
-
-gen: generate-all-routes.cpp
-	g++ -O2 -std=c++14 generate-all-routes.cpp -o gen
