@@ -1,0 +1,52 @@
+---
+layout: default
+---
+
+<div class="home">
+
+  <h1 class="page-heading">Algorithms Solving</h1>
+
+  <p>
+    My solutions of different problems on different websites to keep track of how I develop code. I want to use this
+    code to play with possible solutions and check implication of changes on code metricies.
+  </p>
+
+  <p>
+    For example, multithreaded code - how can I split tasks into threads, and see how faster does it work. It includes
+    working on practical preparing code for multithreaded run.
+  </p>
+
+  <p>
+    Another low hanging fruit for some algorithms is SIMD usage. Simply implementing using these operations under Linux
+    and Windows is a fun task itself.
+  </p>
+
+  <p>
+    This is a collection of ideal pieces of code like finding reverse numbers in a limited number field, solving linear
+    equasions, finding binomial coeficients, etc. With explanation and analysis.
+  </p>
+
+  <p>Read about how I solve problems <a href="{{ site.pages[3].url | prepend: site.baseurl }}">Solving</a> section</p>
+
+  <p>
+    Some problems are described here, others - in github <code class="highligter-rouge">Readme.md</code> files of
+    corresponding solutions.
+  </p>
+
+  <h2>Problems:</h2>
+
+  <ul class="post-list">
+    {% for post in site.posts %}
+    {% if post.categories contains "problem" %}
+      <li>
+        <h3>
+          <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
+        </h3>
+      </li>
+    {% endif %}
+    {% endfor %}
+  </ul>
+
+  <p class="rss-subscribe">subscribe <a href="{{ "/feed.xml" | prepend: site.baseurl }}">via RSS</a></p>
+
+</div>

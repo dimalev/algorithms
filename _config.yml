@@ -1,0 +1,20 @@
+# Welcome to Jekyll!
+#
+# This config file is meant for settings that affect your whole blog, values
+# which you are expected to set up once and rarely need to edit after that.
+# For technical reasons, this file is *NOT* reloaded automatically when you use
+# 'jekyll serve'. If you change this file, please restart the server process.
+
+# Site settings
+title: Algorithms
+email: ldimat@gmail.com
+description: >
+  Collection of problem solutions, together with framework for
+  solving and testing code in different languages.
+baseurl: "/algorithms" # the subpath of your site, e.g. /blog
+url: "http://dimalev.github.io" # the base hostname & protocol for your site
+github_username: dimalev
+
+# Build settings
+markdown: kramdown
+permalink: none
