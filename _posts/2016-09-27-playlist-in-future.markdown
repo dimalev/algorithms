@@ -1,8 +1,9 @@
 ---
-layout: post
+layout: problem
 title:  "Playlist in future"
 date:   2016-09-27 12:46:25 +0300
-categories: problem algorithm-linear-equations yandex yandex-2016 yandex-2016-warmup
+categories: ["problem", "yandex", "yandex-2016", "yandex-2016-warmup"]
+algorithms: ["linear-equations"]
 ---
 
 Originates from Yandex Algorithms 2016.

@@ -181,6 +181,10 @@
 
     > li {
         margin-bottom: $spacing-unit;
+
+        a {
+            display: inline-block;
+        }
     }
 }
 
@@ -239,4 +243,26 @@
             font-size: 18px;
         }
     }
+}
+
+.language-flag {
+    font-size: 60%;
+    border-radius: 5px;
+    padding: 2px 5px;
+    font-weight: bold;
+}
+
+.language-flag-java {
+    background-color: purple;
+    color: gold;
+}
+
+.language-flag-erlang {
+    background-color: grey;
+    color: yellow;
+}
+
+.language-flag-cpp {
+    background-color: blue;
+    color: gold;
 }

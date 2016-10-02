@@ -26,12 +26,29 @@ layout: default
     equasions, finding binomial coeficients, etc. With explanation and analysis.
   </p>
 
-  <p>Read about how I solve problems <a href="{{ site.pages[3].url | prepend: site.baseurl }}">Solving</a> section</p>
+  <p>Read about how I solve problems <a href="{{ site.pages[5].url | prepend: site.baseurl }}">Solving</a> section</p>
 
   <p>
     Some problems are described here, others - in github <code class="highligter-rouge">Readme.md</code> files of
     corresponding solutions.
   </p>
+
+  <h2>Algorithms:</h2>
+
+  <ul class="post-list">
+    {% for post in site.posts %}
+    {% if post.categories contains "algorithm" %}
+      <li>
+        <h3>
+          <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
+          {% for impl in post.implementations %}
+          <span class="language-flag language-flag-{{ impl }}">{{ impl }}</span>
+          {% endfor %}
+        </h3>
+      </li>
+    {% endif %}
+    {% endfor %}
+  </ul>
 
   <h2>Problems:</h2>
 
