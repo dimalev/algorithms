@@ -4,6 +4,16 @@
 #include <vector>
 #include <map>
 
+#ifdef ALGO_DEBUG
+#include "../test/debug.cpp"
+#else
+
+#define TRACE(message)
+#define TRACE_LINE(message)
+#define ASSERT(expr)
+
+#endif
+
 const unsigned long start = 1465948800;
 const unsigned long end = 1468540799;
 
@@ -23,9 +33,7 @@ int main() {
     std::string interest;
     std::getline(std::cin, interest, '\n');
     std::transform(interest.begin(), interest.end(), interest.begin(), ::tolower);
-#ifdef ALGO_DEBUG
-    std::cerr << "i[" << i << "]: " << interest << std::endl << std::endl;
-#endif
+    TRACE_LINE("i[" << i << "]: " << interest);
     interests.push_back(interest);
   }
   std::map<int, Reviewer*> reviewers;
@@ -37,9 +45,7 @@ int main() {
     std::getline(std::cin, body, '\n');
     std::getline(std::cin, body, '\n');
     std::transform(body.begin(), body.end(), body.begin(), ::tolower);
-#ifdef ALGO_DEBUG
-    std::cerr << body << std::endl << std::endl;
-#endif
+    TRACE_LINE(body << std::endl);
     auto rit = reviewers.find(r);
     Reviewer* reviewer = nullptr;
     if(rit != reviewers.end()) {

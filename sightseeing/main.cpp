@@ -3,6 +3,16 @@
 #include <string>
 #include <cstring>
 
+#ifdef ALGO_DEBUG
+#include "../test/debug.cpp"
+#else
+
+#define TRACE(message)
+#define TRACE_LINE(message)
+#define ASSERT(expr)
+
+#endif
+
 int main() {
   int T;
   std::cin >> T;
@@ -24,9 +34,7 @@ int main() {
       while(next_comma < line.size() && next_comma != std::string::npos) {
         place = line.substr(comma, next_comma - comma);
         for(currp = 0; currp < places.size() && places[currp] != place; ++currp);
-#ifdef ALGO_DEBUG
-        std::cerr << "[" << place << "] " << prevp << " -> " << currp << std::endl;
-#endif
+        TRACE_LINE("[" << place << "] " << prevp << " -> " << currp);
         if(currp == places.size()) places.push_back(place);
         if(prevp != -1) {
           visitMatrix[prevp][++visitMatrix[prevp][0]] = currp;
@@ -38,9 +46,7 @@ int main() {
       place = line.substr(comma);
       if(place != "") {
         for(currp = 0; currp < places.size() && places[currp] != place; ++currp);
-#ifdef ALGO_DEBUG
-        std::cerr << "[" << place << "] " << prevp << " -> " << currp << std::endl;
-#endif
+        TRACE_LINE("[" << place << "] " << prevp << " -> " << currp);
         if(currp == places.size()) places.push_back(place);
         if(prevp != -1) {
           visitMatrix[prevp][++visitMatrix[prevp][0]] = currp;
@@ -57,30 +63,22 @@ int main() {
       verticenext[0] = 0;
       verticeid[0] = j;
       int k = 0;
-#ifdef ALGO_DEBUG
-      std::cerr << "start from: " << j << std::endl;
-#endif
+      TRACE_LINE("start from: " << j);
       while(k >= 0) {
         int interest = verticeid[k];
         if(verticenext[k] >= visitMatrix[interest][0]) {
-#ifdef ALGO_DEBUG
-          std::cerr << "leaving: " << interest << std::endl;
-#endif
+          TRACE_LINE("leaving: " << interest);
           visited[interest] = -1;
           --k;
         } else {
           int next = visitMatrix[interest][++verticenext[k]];
           if(visited[next] == j + 1) {
-#ifdef ALGO_DEBUG
-            std::cerr << "visiting: " << next << " again!" << std::endl;
-#endif
+            TRACE_LINE("visiting: " << next << " again!");
             std::cout << "ORDER VIOLATION" << std::endl;
             violated = true;
             break;
           } else if(visited[next] == 0) {
-#ifdef ALGO_DEBUG
-            std::cerr << "visiting: " << next << std::endl;
-#endif
+            TRACE_LINE("visiting: " << next);
             visited[next] = j + 1;
             ++k;
             verticenext[k] = 0;

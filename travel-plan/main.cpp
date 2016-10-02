@@ -4,6 +4,16 @@
 #include <map>
 #include <cmath>
 
+#ifdef ALGO_DEBUG
+#include "../test/debug.cpp"
+#else
+
+#define TRACE(message)
+#define TRACE_LINE(message)
+#define ASSERT(expr)
+
+#endif
+
 const float pi = 3.14159265359;
 const float r = 6371;
 
@@ -47,16 +57,12 @@ int main() {
       interests.insert(interest);
     }
   }
-  #ifdef ALGO_DEBUG
-  std::cerr << "Interests read" << std::endl;
-  #endif
+  TRACE_LINE("Interests read");
 
   std::cin >> m;
   Destination destinations[m];
   for(int i = 0; i < m; ++i) {
-    #ifdef ALGO_DEBUG
-    std::cerr << "reading " << i << " destination" << std::endl;
-    #endif
+    TRACE_LINE("reading " << i << " destination");
     std::string dest_name;
     float ln, lt;
     std::cin >> destinations[i].name >> destinations[i].lt >> destinations[i].ln;
@@ -77,9 +83,7 @@ int main() {
     Destination& dst1 = destinations[i];
     for(int j = i + 1; j < m; ++j) {
       Destination& dst2 = destinations[j];
-  #ifdef ALGO_DEBUG
-      std::cerr << dst1.name << " - " << dst2.name << ": " << dest(dst1, dst2) << std::endl;
-  #endif
+      TRACE_LINE(dst1.name << " - " << dst2.name << ": " << dest(dst1, dst2));
       if(dst1.name == dst2.name) continue;
       std::set<std::string> common{dst1.interests};
       common.insert(dst2.interests.begin(), dst2.interests.end());
