@@ -33,28 +33,11 @@ layout: default
     corresponding solutions.
   </p>
 
-  <h2>Algorithms:</h2>
+  <h2>Blog</h2>
 
   <ul class="post-list">
     {% for post in site.posts %}
-    {% if post.categories contains "algorithm" %}
-      <li>
-        <h3>
-          <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
-          {% for impl in post.implementations %}
-          <span class="language-flag language-flag-{{ impl }}">{{ impl }}</span>
-          {% endfor %}
-        </h3>
-      </li>
-    {% endif %}
-    {% endfor %}
-  </ul>
-
-  <h2>Problems:</h2>
-
-  <ul class="post-list">
-    {% for post in site.posts %}
-    {% if post.categories contains "problem" %}
+    {% if post.categories contains "blog" %}
       <li>
         <h3>
           <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
