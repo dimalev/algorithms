@@ -1,4 +1,4 @@
-// print sizes of different matrices
+// print sizes of different matrices (in elements and bytes)
 
 #include <iostream>
 #include <typeinfo>
@@ -19,14 +19,14 @@ void print(Numeric_lib::Matrix<T, 1> mat) {
 template<class T>
 void print(Numeric_lib::Matrix<T, 2> mat) {
   std::cout << "Matrix of type " << typeid(T).name()
-            << " and size " << mat.dim1() << "x" << mat.dim2()
+            << " and size " << mat.dim1() << "x" << mat.dim2() << " = " << mat.size()
             << " has size " << sizeof(mat) << std::endl;
 }
 
 template<class T>
 void print(Numeric_lib::Matrix<T, 3> mat) {
   std::cout << "Matrix of type " << typeid(T).name()
-            << " and size " << mat.dim1() << "x" << mat.dim2() << "x" << mat.dim3()
+            << " and size " << mat.dim1() << "x" << mat.dim2() << "x" << mat.dim3() << " = " << mat.size()
             << " has size " << sizeof(mat) << std::endl;
 }
 
