@@ -30,7 +30,7 @@ void seven() {
 }
 
 int main() {
-  //six();
+  six();
   seven();
   return 0;
 }
