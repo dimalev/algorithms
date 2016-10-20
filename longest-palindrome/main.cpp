@@ -1,108 +1,108 @@
+/*
+
+M(sequence) = (M_count, M_letter) number of same letters in center
+
++1 letter:
+  for even sequences - any letter in center of sequence
+  for any sequence - M_count + 1 of M_letter in each center place of sequence
++2 letter:
+  for any sequence any not matched (horizontal/vertical move) can be mirrored on the opposit side
++3 letter:
+  impossible!
+*/
+
 #include <iostream>
 #include <algorithm>
 
-const int MAX_N = 3000;
+#ifdef ALGO_DEBUG
+#include "../test/debug.cpp"
+#else
 
-int find_common(char * const line, int L, int left_start, int right_start) {
-  if (left_start < 0) return 0;
-  if (right_start >= L) return 0;
-  int max_left = left_start + 1;
-  int max_right = L - right_start;
-  int total_max = std::min(max_left, max_right);
-  for (int i = 0; i < total_max; ++i) {
-    if (line[left_start - i] != line[right_start + i]) return i;
-  }
-  return total_max;
-}
+#define TRACE(message)
+#define TRACE_LINE(message)
+#define ASSERT(expr)
 
-void find_odd(char* const line, int L, int pivot, int &max, int &left_boosted, int &right_boosted) {
-  int max_part = find_common(line, L, pivot, pivot);
-  max = 2 * (max_part - 1) + 1;
-  int max_left = pivot + 1;
-  int max_right = L - pivot;
-  if (max_part == max_left && max_part == max_right) {
-    left_boosted = -1;
-    right_boosted = max; // if we exosted all the line
-  }
-  else if (max_part < max_left && max_part < max_right) { // if there are parts from both sides
-    int max_left_part = find_common(line, L, pivot - max_part - 1, pivot + max_part) + 1;
-    int max_right_part = find_common(line, L, pivot - max_part, pivot + max_part + 1) + 1;
-    left_boosted = (max_part + max_left_part - 1) * 2 + 1;
-    right_boosted = (max_part + max_right_part - 1) * 2 + 1;
-  }
-  else {
-    left_boosted = -1;
-    right_boosted = max + 2; // there is a part from only one side
-  }
-}
+#endif
 
-/*
-   p
-012|3456789
-asd|dsz
+constexpr int MAX_N = 3000;
 
-pivot = 3
-max_part = 2
-max_left = 3
-max_right = 6 - 3 = 3
+int N;
+char line[MAX_N + 1];
+int matrix[MAX_N][MAX_N];
 
-
-*/
-
-void find_even(char * const line, int L, int pivot, int &max, int &left_boosted, int &right_boosted) {
-  int max_part = find_common(line, L, pivot - 1, pivot);
-  int max_left = pivot;
-  int max_right = L - pivot;
-  max = max_part * 2;
-  if (max_part == max_right && max_part == max_left) {
-    left_boosted = -1;
-    right_boosted = max;
+int longest_palyndrome() {
+  for(int i = 0; i < N; ++i) {
+    for(int j = 0; j < N; ++j) {
+      if(line[N - i - 1] == line[j]) {
+        if(i > 0 && j > 0) matrix[i][j] = matrix[i - 1][j - 1] + 1;
+        else matrix[i][j] = 1;
+      } else {
+        if(i == 0) {
+          if(j == 0) matrix[i][j] = 0;
+          else matrix[i][j] = matrix[i][j - 1];
+        } else if(j == 0) {
+          matrix[i][j] = matrix[i - 1][j];
+        } else matrix[i][j] = std::max(matrix[i - 1][j], matrix[i][j - 1]);
+      }
+    }
   }
-  else if (max_part < max_right && max_part < max_left) {
-    int max_left_part = find_common(line, L, pivot - max_part - 2, pivot + max_part) + 1;
-    int max_right_part = find_common(line, L, pivot - max_part - 1, pivot + max_part + 1) + 1;
-    left_boosted = (max_part + max_left_part) * 2;
-    right_boosted = (max_part + max_right_part) * 2;
-  }
-  else {
-    left_boosted = -1;
-    right_boosted = max + 2;
-  }
+  return matrix[N - 1][N - 1];
 }
 
 int main() {
   int T;
   std::cin >> T;
   for (int t = 0; t < T; ++t) {
-    int N, K;
+    int K;
     std::cin >> N >> K;
-    char line[MAX_N + 1];
     std::cin >> line;
-    if (K == 0) std::cout << (26 * (N + 1)) << std::endl;
-    else {
-      int max[MAX_N + 2];
-      std::fill(max, max + N + 1, 0);
-      int max_polyndrome = 0;
-      for (int i = 0; i < N; ++i) {
-        int max_current, max_left_boosted, max_right_boosted;
-        find_odd(line, N, i, max_current, max_left_boosted, max_right_boosted);
-        //std::cout << "for pivot " << i << " max = " << max_current << ", left = " << max_left_boosted << ", right = " << max_right_boosted << std::endl;
-        max_polyndrome = std::max(max_current, max_polyndrome);
-        if (max_left_boosted >= 0) ++max[max_left_boosted];
-        ++max[max_right_boosted];
+    if(K == 0) std::cout << (26 * (N + 1)) << std::endl;
+    else if(K > 2) {
+      std::cout << 0 << std::endl;
+    } else {
+      int L = longest_palyndrome();
+      TRACE_LINE("longest line " << L);
+      int res = 0;
+      if(K == 1 && L % 2 == 0) {
+        TRACE_LINE("K = 1 && L : 2");
+        int L2 = L / 2;
+        for(int i = 0; i <= N; ++i) { // put char in front of i-th char ..
+          TRACE_LINE("Trying to put char on " << i << "-th position");
+          if(i > 0 && matrix[i - 1][N - i - 1] == L2) { // .. to mirror itselft
+            res += 26;
+          } else {
+            for(int j = 0; j < i; ++j) { // .. to mirror j-th char
+              int L1 = (j >= 1 && N - i - 1 >= 0) ? matrix[j - 1][N - i - 1] : 0;
+              int L2d = N - i - 1 >= 0 ? matrix[j][N - i - 1] : 0;
+              int L2 = (i > 0 && N - j - 2 >= 0) ? matrix[i - 1][N - j - 2] : 0;
+              if(2 * L1 + L2d - L2 >= L + 2) ++res;
+            }
+            for(int j = i; j < N; ++j) { // .. to mirror j-th char
+              int L1 = (i > 0 && N - j - 2 >= 0) ? matrix[i - 1][N - j - 2] : 0;
+              int L2d = N - i - 1 >= 0 ? matrix[i - 1][N - j - 1] : 0;
+              int L2 = (i > 0 && N - j - 2 >= 0) ? matrix[j - 1][N - i - 1] : 0;
+              if(2 * L1 + L2d - L2 >= L + 2) ++res;
+            }
+          }
+        }
+      } else {
+        TRACE_LINE("seargin for K == 2");
+        for(int i = 0; i <= N; ++i) { // put char in front of i-th char ..
+          for(int j = 0; j < i; ++j) { // .. to mirror j-th char
+            int L1 = (j >= 1 && N - i - 1 >= 0) ? matrix[j - 1][N - i - 1] : 0;
+            int L2d = N - i - 1 >= 0 ? matrix[j][N - i - 1] : 0;
+            int L2 = (i > 0 && N - j - 2 >= 0) ? matrix[i - 1][N - j - 2] : 0;
+            if(2 * L1 + L2d - L2 >= L + 2) ++res;
+          }
+          for(int j = i; j < N; ++j) { // .. to mirror j-th char
+            int L1 = (i > 0 && N - j - 2 >= 0) ? matrix[i - 1][N - j - 2] : 0;
+            int L2d = i > 0 && N - j - 1 >= 0 ? matrix[i - 1][N - j - 1] : 0;
+            int L2 = (i > 0 && N - j - 2 >= 0) ? matrix[j - 1][N - i - 1] : 0;
+            if(2 * L1 + L2d - L2 >= L + 2) ++res;
+          }
+        }
       }
-      //std::cout << "---" << std::endl;
-      for (int i = 0; i <= N; ++i) {
-        int max_current, max_left_boosted, max_right_boosted;
-        find_even(line, N, i, max_current, max_left_boosted, max_right_boosted);
-        //std::cout << "for pivot " << i << " max = " << max_current << ", left = " << max_left_boosted << ", right = " << max_right_boosted << std::endl;
-        max_polyndrome = std::max(max_current, max_polyndrome);
-        if (max_left_boosted >= 0) ++max[max_left_boosted];
-        ++max[max_right_boosted];
-      }
-      int total = 0;
-      for (int i = max_polyndrome + K; i <= N + 1; ++i) total += max[i];
-      std::cout << total << std::endl;
+      std::cout << res << std::endl;
     }
   }
   return 0;
