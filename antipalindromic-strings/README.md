@@ -44,4 +44,5 @@ Answer = M
 for `N = 1`.
 
 The most interesting part of this task - is calculate `(M - 2) ^ (N - 2)`
-efficiantly, and not exceed numeric limits.
+efficiantly, and not exceed numeric limits. See
+[Exponentiating by squaring](http://dimalev.github.io/algorithms/algorithm/exponentiation-by-squaring.html).
