@@ -1,6 +1,6 @@
 #include <iostream>
-
-inline void swap(int &a, int &b) { int t = a; a = b; b = t; }
+#include <vector>
+#include <algorithm>
 
 class point {
 public:
@@ -11,6 +11,7 @@ class line {
 public:
   point left, right;
   bool is_left;
+  line *next = nullptr;
 };
 
 bool is_above(const line &in_line, const point &in_point) {
@@ -29,10 +30,6 @@ bool strictly_above(const line &left, const line &right) {
   return is_above(left, right.left) && is_above(left, right.right);
 }
 
-bool operator<(const line &left, const line &right) {
-  return isAbove(left, right.left);
-}
-
 std::istream& operator>>(std::istream &in, point &out_point) {
   in >> out_point.x >> out_point.y;
   return in;
@@ -48,27 +45,30 @@ std::istream& operator>>(std::istream &in, line &out_line) {
     out_line.left = right;
     out_line.right = left;
   }
-  out_line.is_left = out_line.left.y > out_lint.right.y;
+  out_line.is_left = out_line.left.y > out_line.right.y;
   return in;
+}
+
+void build_tree(std::vector<line> &lines) {
+}
+
+int fall_x(std::vector<line> &lines, point& in_point) {
+  
 }
 
 int main() {
   int n, q;
   std::cin >> n >> q;
-  vector<line> lefts, rights;
+  std::vector<line> lines;
   for(int i = 0; i < n; ++i) {
     line in_line;
     std::cin >> in_line;
-    if(in_line.is_left) lefts.push_back(in_line);
-    else rights.push_back(in_line);
+    lines.push_back(in_line);
   }
-  std::sort(lefts.begin(), lefts.end());
-  std::sort(rights.begin(), rights.end());
+  build_tree(lines);
   for(int i = 0; i < q; ++i) {
     point in_point;
     std::cin >> in_point;
-    left_close = std::lower_bound(lefts.begin(), lefts.end(), in_point, is_above);
-    right_close = std::lower_bound(rights.begin(), rights.end(), in_point, is_above);
     if(strictly_above(left_close, right_close)) {
     }
   }
