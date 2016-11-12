@@ -5,6 +5,9 @@
 class point {
 public:
   int x, y;
+
+  static x_comparator(const point &one, const point &two) { return one.x < two.x; }
+  static y_comparator(const point &one, const point &two) { return one.y < two.y; }
 };
 
 class line {
@@ -22,9 +25,9 @@ bool is_above(const line &in_line, const point &in_point) {
   return b * u - a * v < 0;
 }
 
-bool operator<(const point &left, const point &right) {
-  return left.x < right.x;
-}
+// bool operator<(const point &left, const point &right) {
+//   return left.x < right.x;
+// }
 
 bool strictly_above(const line &left, const line &right) {
   return is_above(left, right.left) && is_above(left, right.right);

@@ -104,25 +104,12 @@ int main() {
     int m = (l + r) / 2;
     for(int i = 0; i < n; ++i) histo[i] = data[i] > m ? 1 : 0;
     setup(0, 0, n - 1);
-    // std::cout << "setup(" << vocabulary[m] << ", " << maxX << "): z=";
-    // for(int i = 0; i <= maxX; ++i) std::cout << " " << zeroes[i];
-    // std::cout << " - all=";
-    // for(int i = 0; i <= maxX; ++i) std::cout << " " << all[i];
-    // std::cout << " |" << std::endl;
     for(int i = 0; i < q; ++i) {
       int countZero = count(0, 0, n - 1, L[i], R[i]);
-      // std::cout << L[i] << "-" << R[i] << ": " << countZero << std::endl;
       update(0, 0, n - 1, L[i], L[i] + countZero, R[i]);
-      // std::cout << " - z=";
-      // for(int i = 0; i <= maxX; ++i) std::cout << " " << zeroes[i];
-      // std::cout << " - all=";
-      // for(int i = 0; i <= maxX; ++i) std::cout << " " << all[i];
-      // std::cout << " |" << std::endl;
     }
     int z = count(0, 0, n - 1, k, k);
-    // std::cout << "total zero: " << z << std::endl;
     if(z == 0) l = m; else r = m;
-    // std::cout << l << " - " << r << std::endl;
   }
 
   std::cout << vocabulary[r] << std::endl;
