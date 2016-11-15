@@ -15,13 +15,7 @@ class line {
 public:
   point top, bottom;
   bool is_left;
-  const line *next = nullptr;
   int final_x;
-
-  static bool bottom_x_comparator(const line &one, const line &two) {
-    if(one.bottom.y == two.bottom.y) return one.top.y > two.top.y;
-    return one.bottom.y > two.bottom.y;
-  }
 };
 
 bool is_above(const line &in_line, const point &in_point) {
@@ -30,6 +24,10 @@ bool is_above(const line &in_line, const point &in_point) {
     u = in_point.x - in_line.top.x,
     v = in_point.y - in_line.top.y;
   return in_line.is_left ? (b * u - a * v < 0) : (b * u - a * v > 0);
+}
+
+bool bottom_x_comparator(const line &one, const line &two) {
+  return (is_above(two, one.top) && is_above(two, one.bottom));
 }
 
 // bool strictly_above(const line &left, const line &right) {
@@ -65,21 +63,24 @@ std::ostream& operator<<(std::ostream &out, const line &out_line) {
   return out;
 }
 
-int fall_x(std::vector<line> &lines, point& in_point, const line* fall_on) {
-  fall_on = nullptr;
-  for(const line &segment : lines) {
-    if(segment.bottom.y >= in_point.y) continue;
-    if(segment.is_left) {
-      if(segment.top.x < in_point.x) continue;
-      if(segment.bottom.x > in_point.x) continue;
+int fall_x(std::vector<line> &lines, point& in_point) {
+  auto it = std::lower_bound(lines.begin(), lines.end(), in_point.y, [](const line &l, int y) -> bool { return l.bottom.y > y; });
+  while(it != lines.end()) {
+    if(it->is_left) {
+      if(it->top.x < in_point.x || it->bottom.x > in_point.x) {
+        ++it;
+        continue;
+      }
     } else {
-      if(segment.top.x > in_point.x) continue;
-      if(segment.bottom.x < in_point.x) continue;
+      if(it->top.x > in_point.x || it->bottom.x < in_point.x) {
+        ++it;
+        continue;
+      }
     }
-    if(is_above(segment, in_point)) {
-      fall_on = &segment;
-      return segment.final_x;
+    if(is_above((*it), in_point)) {
+      return it->final_x;
     }
+    ++it;
   }
   return in_point.x;
 }
@@ -95,27 +96,18 @@ int main() {
   }
   //  std::copy(lines.begin(), lines.end(), std::ostream_iterator<line>(std::cout, "\n"));
   //  std::cout << "\n";
-  std::sort(lines.begin(), lines.end(), line::bottom_x_comparator);
+  std::sort(lines.begin(), lines.end(), bottom_x_comparator);
   //  std::copy(lines.begin(), lines.end(), std::ostream_iterator<line>(std::cout, "\n"));
 
   auto it = lines.rbegin();
   while(it != lines.rend()) {
-    const line *fall_on = nullptr;
-    int final_x = fall_x(lines, it->bottom, fall_on);
-    if(fall_on == nullptr) {
-      it->final_x = final_x; // meh, really just to use fall_x result;
-      //TRACE_LINE("line " << (*it) << " falls completely down")
-    } else {
-      it->next = fall_on;
-      it->final_x = fall_on->final_x;
-    }
+    it->final_x = fall_x(lines, it->bottom);
     ++it;
   }
 
   for(int i = 0; i < q; ++i) {
     point in_point;
-    const line *dummy_line = nullptr;
     std::cin >> in_point;
-    std::cout << fall_x(lines, in_point, dummy_line) << std::endl;
+    std::cout << fall_x(lines, in_point) << std::endl;
   }
 }
