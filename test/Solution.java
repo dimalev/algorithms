@@ -26,11 +26,8 @@ public class Solution {
 
   static class TravelSolution {
     void solve(int testId, InputReader in, OutputWriter out) {
-      int n = in.readInt(), m = in.readInt(), c = in.readInt();
-      int f = n + m - c;
-      long res = 1;
-      for(long i = 2; i < f; ++i) res *= i;
-      out.print(res);
+      int a = in.readInt(), b = in.readInt();
+      out.printLine(a + b);
     }
   }
 
