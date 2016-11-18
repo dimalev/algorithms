@@ -9,10 +9,8 @@ struct point {
 
 struct line {
   point start, end;
+  point top, bottom;
   int final_x;
-
-  inline point bottom() const { return start.y > end.y ? end : start; }
-  inline point top() const { return start.y < end.y ? end : start; }
 
   // \
   //  \  <- left line
@@ -30,6 +28,13 @@ std::istream& operator>>(std::istream& in, point &out_point) {
 
 std::istream& operator>>(std::istream& in, line &out_line) {
   in >> out_line.start >> out_line.end;
+  if(out_line.start.y > out_line.end.y) {
+    out_line.top = out_line.start;
+    out_line.bottom = out_line.end;
+  } else {
+    out_line.top = out_line.end;
+    out_line.bottom = out_line.start;
+  }
   return in;
 }
 
@@ -49,17 +54,12 @@ std::ostream& operator<<(std::ostream& out, const line *in_line) {
 }
 
 bool is_point_above(const line *in_line, const point &in_point) {
-  int a = in_line->bottom().x - in_line->top().x,
-    b = in_line->bottom().y - in_line->top().y,
-    u = in_point.x - in_line->bottom().x,
-    v = in_point.y - in_line->bottom().y;
-  if(in_line->is_left()) return b * u - a * v < 0;
-  else return b * u - a * v > 0;
-}
-
-bool is_line_below(const line *one, const line *two) {
-  return (is_point_above(two, one->start) && is_point_above(two, one->end)) ||
-    (!is_point_above(one, two->start) && !is_point_above(one, two->end));
+  long long a = in_line->bottom.x - in_line->top.x,
+    b = in_line->bottom.y - in_line->top.y,
+    u = in_point.x - in_line->bottom.x,
+    v = in_point.y - in_line->bottom.y;
+  if(in_line->is_left()) return b * u <= a * v;
+  return b * u >= a * v;
 }
 
 bool is_line_above(const line *one, const line *two) {
@@ -75,85 +75,58 @@ bool falls_on(const line *in_line, const point &in_point) {
 }
 
 bool bottom_y_comparator(const line *one, const line *two) {
-  return one->bottom().y > two->bottom().y;
+  return one->bottom.y > two->bottom.y;
 }
 
-class forest {
-public:
-  std::vector<line*> lefts;
-  std::vector<line*> rights;
+bool bottom_y_test(const point &in_point, const line *in_line) { return in_line->bottom.y < in_point.y; }
 
-  const line* get_falling(const point &in_point) const {
-    auto left_it = lefts.rbegin();
-    auto right_it = rights.rbegin();
-    while(left_it != lefts.rend()) {
-      if(falls_on(*left_it, in_point)) break;
-      ++left_it;
+bool is_closer(const line *new_line, const line *old_line, const point &in_point) {
+  long long dx1 = new_line->bottom.x - new_line->top.x,
+    dy1 = new_line->bottom.y - new_line->top.y,
+    ddx1 = in_point.x - new_line->top.x,
+    dx2 = old_line->bottom.x - old_line->top.x,
+    dy2 = old_line->bottom.y - old_line->top.y,
+    ddx2 = in_point.x - old_line->top.x;
+  return ddx1 * dy1 / dx1 + new_line->top.y > ddx2 * dy2 / dx2 + old_line->top.y;
+}
+
+const line* get_fall(std::vector<line*> &lines, const point &in_point) {
+  auto start = std::upper_bound(lines.begin(), lines.end(), in_point, bottom_y_test);
+  const line *result = nullptr;
+  while(start != lines.end()) {
+    if(falls_on(*start, in_point)) {
+      if(result == nullptr || is_closer(*start, result, in_point)) result = *start;
     }
-    while(right_it != rights.rend()) {
-      if(falls_on(*right_it, in_point)) break;
-      ++right_it;
-    }
-    if(left_it == lefts.rend() && right_it == rights.rend()) {
-      return nullptr;
-    } else if(left_it == lefts.rend()) {
-      return *right_it;
-    } else if(right_it == rights.rend()) {
-      return *left_it;
-    } else {
-      if(is_line_above(*left_it, *right_it) || is_line_below(*right_it, *left_it)) {
-        return *left_it;
-      } else {
-        return *right_it;
-      }
-    }
+    ++start;
   }
-
-  void sort() {
-    std::sort(lefts.begin(), lefts.end(), is_line_above);
-    std::sort(rights.begin(), rights.end(), is_line_above);
-
-    std::vector<line*> all = lefts;
-    all.insert(all.end(), rights.begin(), rights.end());
-
-    std::sort(all.begin(), all.end(), bottom_y_comparator);
-
-    auto it = all.rbegin();
-    while(it != all.rend()) {
-      const line *fall = get_falling((*it)->bottom());
-      if(fall == nullptr) {
-        (*it)->final_x = (*it)->bottom().x;
-        // std::cout << (*it) << " falls on itself" << std::endl;
-      } else {
-        (*it)->final_x = fall->final_x;
-        // std::cout << (*it) << " falls on " << fall << std::endl;
-      }
-      ++it;
-    }
-
-    // std::copy(all.begin(), all.end(), std::ostream_iterator<line*>(std::cout, "\n"));
-  }
-};
+  return result;
+}
 
 int main() {
   int n, q;
   std::cin >> n >> q;
-  forest lines;
+  std::vector<line*> lines;
   for(int i = 0; i < n; ++i) {
     line* in_line = new line;
     std::cin >> *in_line;
-    if(in_line->is_left()) lines.lefts.push_back(in_line);
-    else lines.rights.push_back(in_line);
+    lines.push_back(in_line);
   }
-  lines.sort();
-  // std::copy(lines.lefts.begin(), lines.lefts.end(), std::ostream_iterator<line*>(std::cout, "\n"));
+  std::sort(lines.begin(), lines.end(), bottom_y_comparator);
+  auto process_it = lines.rbegin();
+  while(process_it != lines.rend()) {
+    const line *fall = get_fall(lines, (*process_it)->bottom);
+    if(fall == nullptr) (*process_it)->final_x = (*process_it)->bottom.x;
+    else (*process_it)->final_x = fall->final_x;
+    ++process_it;
+  }
+  // std::copy(lines.begin(), lines.end(), std::ostream_iterator<line*>(std::cout, "\n"));
   // std::cout << std::endl;
   // std::copy(lines.rights.begin(), lines.rights.end(), std::ostream_iterator<line*>(std::cout, "\n"));
   for(int i = 0; i < q; ++i) {
     point in_point;
     std::cin >> in_point;
-    const line *fall = lines.get_falling(in_point);
-    if(nullptr == fall) {
+    const line *fall = get_fall(lines, in_point);
+    if(fall == nullptr) {
       std::cout << in_point.x << std::endl;
     }
     else {
