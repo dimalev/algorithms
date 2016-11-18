@@ -26,6 +26,6 @@ For each scan-line it is obvious that `f(i,j,r)` and `f(i,j + 1, r)` have a lot 
 efficienlty calculate them one by one (by removing left-most number from scan-line value, and adding 
 right-most, new one).
 
-![Moving through element](/images/move.png)
+![Moving through element](images/move.png)
 
 We see that moving right by `dx` elements, moves our circle bounds respectively, which is a place for optimization.
