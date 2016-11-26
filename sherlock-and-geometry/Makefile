@@ -1,6 +1,5 @@
 .PHONY: output-* units start release
 
-# add units here, in case if you would like to run unit tests as part of usual routine
 start: main-debug.o output-*
 
 release: main.o

@@ -6,9 +6,17 @@
 #define TRACE(message)
 #define TRACE_LINE(message)
 #define ASSERT(expr)
+#define UNIT_TESTS()
 #endif
 
+void unit_tests() {
+  int a, b;
+  std::cin >> a >> b;
+  std::cout << a * b << std::endl;
+}
+
 int main() {
+  UNIT_TESTS();
   int a, b, sum;
   TRACE_LINE("Start");
   std::cin >> a >> b;

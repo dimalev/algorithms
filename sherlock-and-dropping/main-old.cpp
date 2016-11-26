@@ -3,128 +3,136 @@
 #include <algorithm>
 #include <iterator>
 
-class point {
-public:
+struct point {
   int x, y;
-
-  static bool x_comparator(const point &one, const point &two) { return one.x > two.x; }
-  static bool y_comparator(const point &one, const point &two) { return one.y > two.y; }
 };
 
-class line {
-public:
+struct line {
+  point start, end;
   point top, bottom;
-  bool processed = false;
-  bool is_left;
   int final_x;
+
+  // \
+  //  \  <- left line
+  //   \
+  //
+  // start = (0, 3) end = (3, 0)
+  // start = (3, 0) end = (0, 3)
+  inline bool is_left() const { return (start.x < end.x) == (start.y > end.y); }
 };
 
-bool is_above(const line &in_line, const point &in_point) {
-  int a = in_line.top.x - in_line.bottom.x,
-    b = in_line.top.y - in_line.bottom.y,
-    u = in_point.x - in_line.top.x,
-    v = in_point.y - in_line.top.y;
-  return in_line.is_left ? (b * u - a * v < 0) : (b * u - a * v > 0);
-}
-
-bool line_comparator(const line &one, const line &two) {
-  return (is_above(two, one.top) && is_above(two, one.bottom));
-}
-
-// bool strictly_above(const line &left, const line &right) {
-//   return is_above(left, right.left) && is_above(left, right.right);
-// }
-
-std::istream& operator>>(std::istream &in, point &out_point) {
+std::istream& operator>>(std::istream& in, point &out_point) {
   in >> out_point.x >> out_point.y;
   return in;
 }
 
-std::ostream& operator<<(std::ostream &out, const point &out_point) {
-  out << out_point.x << " " << out_point.y;
-  return out;
-}
-
-std::istream& operator>>(std::istream &in, line &out_line) {
-  point left, right;
-  in >> left >> right;
-  if(left.y < right.y) {
-    out_line.bottom = left;
-    out_line.top = right;
+std::istream& operator>>(std::istream& in, line &out_line) {
+  in >> out_line.start >> out_line.end;
+  if(out_line.start.y > out_line.end.y) {
+    out_line.top = out_line.start;
+    out_line.bottom = out_line.end;
   } else {
-    out_line.bottom = right;
-    out_line.top = left;
+    out_line.top = out_line.end;
+    out_line.bottom = out_line.start;
   }
-  out_line.is_left = out_line.top.x > out_line.bottom.x;
   return in;
 }
 
-std::ostream& operator<<(std::ostream &out, const line &out_line) {
-  out << out_line.top << " " << out_line.bottom;
+std::ostream& operator<<(std::ostream& out, const point &in_point) {
+  out << in_point.x << ", " << in_point.y;
   return out;
 }
 
-line* fall_x(std::vector<line> &lines, point& in_point) {
-  auto it = std::lower_bound(lines.begin(), lines.end(), in_point.y, [](const line &l, int y) -> bool { return l.bottom.y > y; });
-  while(it != lines.end()) {
-    if(it->is_left) {
-      if(it->top.x < in_point.x || it->bottom.x > in_point.x) {
-        ++it;
-        continue;
-      }
-    } else {
-      if(it->top.x > in_point.x || it->bottom.x < in_point.x) {
-        ++it;
-        continue;
-      }
-    }
-    if(is_above((*it), in_point)) {
-      fall_on = &(*it);
-      return it->final_x;
-    }
-    ++it;
-  }
-  return in_point.x;
+std::ostream& operator<<(std::ostream& out, const line &in_line) {
+  out << "[(" << in_line.start << ") (" << in_line.end << ") (" << in_line.final_x << ")]";
+  return out;
 }
 
-void process_line(std::vector<line> &left_lines, std::vector<line> &right_lines, line& in_line) {
-  line *left_line, *right_line;
-  fall_x(
+std::ostream& operator<<(std::ostream& out, const line *in_line) {
+  out << "[(" << in_line->start << ") (" << in_line->end << ") (" << in_line->final_x << ")]";
+  return out;
+}
+
+bool is_point_above(const line *in_line, const point &in_point) {
+  long long a = in_line->bottom.x - in_line->top.x,
+    b = in_line->bottom.y - in_line->top.y,
+    u = in_point.x - in_line->bottom.x,
+    v = in_point.y - in_line->bottom.y;
+  if(in_line->is_left()) return b * u <= a * v;
+  return b * u >= a * v;
+}
+
+bool is_line_above(const line *one, const line *two) {
+  return (is_point_above(one, two->start) && is_point_above(one, two->end)) ||
+    (!is_point_above(two, one->start) && !is_point_above(two, one->end));
+}
+
+bool falls_on(const line *in_line, const point &in_point) {
+  if(in_point.x < std::min(in_line->start.x, in_line->end.x) ||
+     in_point.x > std::max(in_line->start.x, in_line->end.x)) return false;
+  // std::cout << in_point << " can fall on " << (*in_line) << std::endl;
+  return is_point_above(in_line, in_point);
+}
+
+bool bottom_y_comparator(const line *one, const line *two) {
+  return one->bottom.y > two->bottom.y;
+}
+
+bool bottom_y_test(const point &in_point, const line *in_line) { return in_line->bottom.y < in_point.y; }
+
+bool is_closer(const line *new_line, const line *old_line, const point &in_point) {
+  long long dx1 = new_line->bottom.x - new_line->top.x,
+    dy1 = new_line->bottom.y - new_line->top.y,
+    ddx1 = in_point.x - new_line->top.x,
+    dx2 = old_line->bottom.x - old_line->top.x,
+    dy2 = old_line->bottom.y - old_line->top.y,
+    ddx2 = in_point.x - old_line->top.x;
+  return ddx1 * dy1 / dx1 + new_line->top.y > ddx2 * dy2 / dx2 + old_line->top.y;
+}
+
+const line* get_fall(std::vector<line*> &lines, const point &in_point) {
+  auto start = std::upper_bound(lines.begin(), lines.end(), in_point, bottom_y_test);
+  const line *result = nullptr;
+  while(start != lines.end()) {
+    if(falls_on(*start, in_point)) {
+      if(result == nullptr || is_closer(*start, result, in_point)) result = *start;
+    }
+    ++start;
+  }
+  return result;
 }
 
 int main() {
   int n, q;
   std::cin >> n >> q;
-  std::vector<line> left_lines, right_lines;
+  std::vector<line*> lines;
   for(int i = 0; i < n; ++i) {
-    line in_line;
-    std::cin >> in_line;
-    if(in_line.is_left) left_lines.push_back(in_line);
-    else right_lines.push_back(in_line);
+    line* in_line = new line;
+    std::cin >> *in_line;
+    lines.push_back(in_line);
   }
-  //  std::copy(lines.begin(), lines.end(), std::ostream_iterator<line>(std::cout, "\n"));
-  //  std::cout << "\n";
-  std::sort(left_lines.begin(), left_lines.end(), line_comparator);
-  std::sort(right_lines.begin(), right_lines.end(), line_comparator);
-  //  std::copy(lines.begin(), lines.end(), std::ostream_iterator<line>(std::cout, "\n"));
-
-  auto it = left_lines.rbegin();
-  while(it != left_lines.rend()) {
-    if(it->processed) continue;
-    process_line(left_lines, right_lines, *it);
-    ++it;
+  std::sort(lines.begin(), lines.end(), bottom_y_comparator);
+  auto process_it = lines.rbegin();
+  while(process_it != lines.rend()) {
+    const line *fall = get_fall(lines, (*process_it)->bottom);
+    if(fall == nullptr) (*process_it)->final_x = (*process_it)->bottom.x;
+    else (*process_it)->final_x = fall->final_x;
+    ++process_it;
   }
-
-  it = right_lines.rbegin();
-  while(it != right_lines.rend()) {
-    if(it->processed) continue;
-    process_line(left_lines, right_lines, *it);
-    ++it;
-  }
-
+  // std::copy(lines.begin(), lines.end(), std::ostream_iterator<line*>(std::cout, "\n"));
+  // std::cout << std::endl;
+  // std::copy(lines.rights.begin(), lines.rights.end(), std::ostream_iterator<line*>(std::cout, "\n"));
   for(int i = 0; i < q; ++i) {
     point in_point;
     std::cin >> in_point;
-    std::cout << fall_x(lines, in_point) << std::endl;
+    const line *fall = get_fall(lines, in_point);
+    if(fall == nullptr) {
+      std::cout << in_point.x << std::endl;
+    }
+    else {
+      // std::cout << in_point << " falls on " << fall << std::endl;
+      std::cout << fall->final_x << std::endl;
+    }
   }
+  return 0;
 }

@@ -7,9 +7,14 @@
 #define TRACE(message)
 #define TRACE_LINE(message)
 #define ASSERT(expr)
+#define UNIT_TESTS()
 
 #endif
 
+void unit_tests() {
+}
+
 int main() {
+  UNIT_TESTS()
   return 0;
 }

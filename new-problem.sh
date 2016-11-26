@@ -12,5 +12,7 @@ cd $NEW_PROBLEM_NAME
 
 cp ../test/Makefile ./
 cp ../test/prototype.cpp ./main.cpp
+touch fixtures.txt
+touch units-output.txt
 
 echo "Generation done!"
