@@ -15,6 +15,6 @@ void unit_tests() {
 }
 
 int main() {
-  UNIT_TESTS()
+  UNIT_TESTS();
   return 0;
 }
