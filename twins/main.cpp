@@ -45,9 +45,10 @@ int main() {
   UNIT_TESTS()
   int n, m;
   std::cin >> n >> m;
-  if(n % 2 == 0) ++n;
-  if(m % 2 == 0) --m;
   bool last_was_prime = false;
+  if(n <= 2) n = 3;
+  else if(n % 2 == 0) ++n;
+  if(m % 2 == 0) --m;
   int twins = 0;
   for(int i = n; i <= m; i += 2) {
     if(is_prime(i)) {
