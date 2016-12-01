@@ -23,12 +23,23 @@ almost_equal(const T x, const T y, int ulp) {
 
 class point {
 public:
+  point() = default;
+  point(double x, double y) : x(x), y(y) {}
   double x, y;
 
   bool operator==(const point &other) {
     return almost_equal(x, other.x, 2) && almost_equal(y, other.y, 2);
   }
+  point operator-(const point &other) {
+    return point(x - other.x, y - other.y);
+  }
 };
+
+bool is_not_cw(point * const pivot, point * const from, point * const to) {
+  point norm_from = *from - *pivot; // 0 1
+  point norm_to = *to - *pivot; // 1 0
+  return norm_from.y * norm_to.x <= norm_from.x * norm_to.y;
+}
 
 std::istream& operator>>(std::istream &in, point &out_point) {
   in >> out_point.x >> out_point.y;
@@ -86,10 +97,26 @@ public:
   double tan;
   bool is_ray = false;
 
-  double y_from_x(double in_x) { return bottom->y; }
-  double x_from_y(double in_y) {
+  double y_from_x(double in_x) const { return bottom->y; }
+  double x_from_y(double in_y) const {
     if(is_ray) return top->x;
     return bottom->x + (top->x - bottom->x) * (in_y - bottom->y) / (top->y - bottom->y);
+  }
+
+  bool intersects(const segment * other) const {
+    if(is_ray) {
+      if(other->is_ray) return false;
+      return other->intersects(this);
+    }
+    if(!other->is_ray) return false;
+    if(top->x > bottom->x) {
+      if(other->top->x > top->x) return false;
+      if(other->top->x < bottom->x) return false;
+      return is_not_cw(bottom, top, other->top);
+    }
+    if(other->top->x > bottom->x) return false;
+    if(other->top->x < top->x) return false;
+    return is_not_cw(top, bottom, other->top);
   }
 };
 
@@ -147,9 +174,25 @@ void scan_line_test() {
   }
 }
 
+void test_cw() {
+  int T;
+  std::cin >> T;
+  while(T--) {
+    point pivot, from, to;
+    std::cin >> pivot >> from >> to;
+    if(is_not_cw(&pivot, &from, &to)) std::cout << "true\n";
+    else std::cout << "false\n";
+  }
+}
+
+void test_intersection() {
+}
+
 void unit_tests() {
   segment_test();
   scan_line_test();
+  test_cw();
+  test_intersection();
 }
 
 int main() {
