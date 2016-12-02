@@ -12,8 +12,8 @@
 
 #endif
 
-constexpr int MAX_N = sqrt(1000000000);
-constexpr int MAX_P = 100000;
+constexpr int MAX_N = 150000;
+constexpr int MAX_P = 30000;
 int primes_count = 1;
 int primes[MAX_P];
 int primes_sqr[MAX_P];
