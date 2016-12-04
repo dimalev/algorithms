@@ -97,6 +97,10 @@ public:
   double tan;
   bool is_ray = false;
 
+  // ray finish data
+  class event *end_event = nullptr;
+  segment *intersector = nullptr;
+
   double y_from_x(double in_x) const { return bottom->y; }
   double x_from_y(double in_y) const {
     if(is_ray) return top->x;
@@ -142,6 +146,97 @@ public:
   }
 };
 
+class event {
+public:
+  enum class type { begin, end };
+  event(type t, segment *who, point *where, bool own_point = false) : t(t), who(who), where(where), is_own_point(own_point) {}
+  ~event() {
+    if(is_own_point) delete where;
+  }
+  type t;
+  segment *who;
+  point *where;
+  bool is_own_point;
+
+  bool operator<(const event &other) {
+    if(other->where->y > where->y) return false;
+    if(other->where->y < where->y) return true;
+    if(other->t == type::end && t == type::begin) return false;
+    if(other->t == type::begin && t == type::end) return true;
+    return segment->is_ray;
+  }
+};
+
+class intersection {
+public:
+  intersection(segment *one, *two) : one(one), two(two) {}
+  segment *one, *two;
+};
+
+class find_intersections {
+  std::vector<intersection*> intersections;
+  std::set<event*> events;
+  std::set<events*> ray_ends;
+  scan_line line(std::numeric_limits<double>::max());
+  std::set<segment*, line.less> segments;
+
+  void register_intersection(segment *one, segment *two) {
+  }
+
+public:
+  std::vector<intersection*> operator()(std::vector<segment*> &bars, std::vector<segment*> &balls) {
+    intersections.clear();
+    events.clear();
+    ray_ends.clear();
+    segments.clear();
+    line.y = std::numeric_limits<double>::max();
+    for(segment* b : bars) {
+      events.emplace(event::type::begin, bar, bar->top);
+      events.emplace(event::type::end, bar, bar->bottom);
+    }
+    for(segment* b : balls)
+      events.emplace(event::type::begin, bar, bar->top);
+    while(events.size() > 0) {
+      if(ray_ends.size() > 0 && *ray_ends[0] < *events[0]) {
+        event* ray_end = ray_ends[0];
+        ray_end.pop_front();
+        line.y = ray_end->where->y;
+        intersections.emplace(ray_end->who, ray_end->who->intersector);
+        segments.erase(ray_end->who);
+        delete ray_end;
+      } else {
+        event *e = events[0];
+        events.pop_front();
+        line.y = e->where->y;
+        auto bigger = segments.upper_bound(events.who);
+        if(e->t == event::type::begin) {
+          if(bigger != segments.end()) {
+            if((*bigger)->intersects(e->who)) {
+              segment *r = e->who->is_ray ? e->who : (*bigger);
+              segment *s = e->who->is_ray ? (*bigger) : e->who;
+              if(r->end_event == nullptr) {
+                event *ray_end = new event(end, r, new point(r->top->x, s->y_from_x(r->top->x)), true);
+                ray_ends.insert(ray_end);
+                r->end_event = ray_end;
+                r->intersector = s;
+              } else {
+                double new_y = s->y_from_x(r->top->x);
+                if(new_y > r->end_event->where->y) {
+                  ray_ends.erase(r->end_event);
+                  r->where->y = new_y;
+                  r->intersector = s;
+                  ray_ends.insert(r->end_event);
+                }
+              }
+            }
+          }
+          if(bigger != segments.begin()) {
+          }
+        }
+      }
+    }
+  }
+};
 void segment_test() {
   int T;
   // tangents
@@ -186,6 +281,13 @@ void test_cw() {
 }
 
 void test_intersection() {
+  int T;
+  std::cin >> T;
+  while(T--) {
+    segment one, two;
+    std::cin >> one >> two;
+    std::cout << (one.intersects(&two)? "true\n" : "false\n");
+  }
 }
 
 void unit_tests() {
