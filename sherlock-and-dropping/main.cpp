@@ -2,6 +2,8 @@
 #include <limits>
 #include <cmath>
 #include <iomanip>
+#include <vector>
+#include <set>
 
 #ifdef ALGO_DEBUG
 #include "../test/debug.cpp"
@@ -39,6 +41,12 @@ bool is_not_cw(point * const pivot, point * const from, point * const to) {
   point norm_from = *from - *pivot; // 0 1
   point norm_to = *to - *pivot; // 1 0
   return norm_from.y * norm_to.x <= norm_from.x * norm_to.y;
+}
+
+bool is_not_ccw(point * const pivot, point * const from, point * const to) {
+  point norm_from = *from - *pivot; // 0 1
+  point norm_to = *to - *pivot; // 1 0
+  return norm_from.y * norm_to.x >= norm_from.x * norm_to.y;
 }
 
 std::istream& operator>>(std::istream &in, point &out_point) {
@@ -107,6 +115,13 @@ public:
     return bottom->x + (top->x - bottom->x) * (in_y - bottom->y) / (top->y - bottom->y);
   }
 
+  bool operator<(const segment &other) const {
+    if(other.is_ray || is_ray) return top->x < other.top->x;
+    if(other.top->y > top->y) return other < *this;
+    if(top->x < bottom->x) return is_not_cw(top, bottom, other.top);
+    return is_not_cw(bottom, top, other.top);
+  }
+
   bool intersects(const segment * other) const {
     if(is_ray) {
       if(other->is_ray) return false;
@@ -159,26 +174,30 @@ public:
   bool is_own_point;
 
   bool operator<(const event &other) {
-    if(other->where->y > where->y) return false;
-    if(other->where->y < where->y) return true;
-    if(other->t == type::end && t == type::begin) return false;
-    if(other->t == type::begin && t == type::end) return true;
-    return segment->is_ray;
+    if(other.where->y > where->y) return false;
+    if(other.where->y < where->y) return true;
+    if(other.t == type::end && t == type::begin) return false;
+    if(other.t == type::begin && t == type::end) return true;
+    return who->is_ray;
   }
 };
 
 class intersection {
 public:
-  intersection(segment *one, *two) : one(one), two(two) {}
+  intersection(segment *one, segment *two) : one(one), two(two) {}
   segment *one, *two;
+};
+
+class segment_pointer_comparator {
+public:
+  bool operator()(segment *left, segment *right) { return *left < *right; }
 };
 
 class find_intersections {
   std::vector<intersection*> intersections;
   std::set<event*> events;
   std::set<events*> ray_ends;
-  scan_line line(std::numeric_limits<double>::max());
-  std::set<segment*, line.less> segments;
+  std::set<segment*, segment_pointer_comparator> segments;
 
   void register_intersection(segment *one, segment *two) {
   }
