@@ -37,16 +37,16 @@ public:
   }
 };
 
-bool is_not_cw(point * const pivot, point * const from, point * const to) {
+bool is_ccw(point * const pivot, point * const from, point * const to) {
   point norm_from = *from - *pivot; // 0 1
   point norm_to = *to - *pivot; // 1 0
-  return norm_from.y * norm_to.x <= norm_from.x * norm_to.y;
+  return norm_from.y * norm_to.x < norm_from.x * norm_to.y;
 }
 
-bool is_not_ccw(point * const pivot, point * const from, point * const to) {
+bool is_cw(point * const pivot, point * const from, point * const to) {
   point norm_from = *from - *pivot; // 0 1
   point norm_to = *to - *pivot; // 1 0
-  return norm_from.y * norm_to.x >= norm_from.x * norm_to.y;
+  return norm_from.y * norm_to.x > norm_from.x * norm_to.y;
 }
 
 std::istream& operator>>(std::istream &in, point &out_point) {
@@ -68,7 +68,7 @@ class segment {
   }
 public:
   explicit segment() = default;
-  explicit segment(point *start) : top(start), tan(+0.f) {} // simple ray constructor
+  explicit segment(point *start) : top(start), bottom(start), tan(+0.f), is_ray(true) {} // simple ray constructor
   segment(point *start, point *end) {
     if(start->y > end->y) {
       top = start; bottom = end;
@@ -98,28 +98,45 @@ public:
   }
   virtual ~segment() {
     if(is_own_points) {
-      delete top; delete bottom;
+      // delete top; delete bottom;
     }
   }
   point *top, *bottom;
+  double final_x;
   double tan;
   bool is_ray = false;
+
+  // ray created by segment
+  segment *owner = nullptr;
 
   // ray finish data
   class event *end_event = nullptr;
   segment *intersector = nullptr;
 
-  double y_from_x(double in_x) const { return bottom->y; }
   double x_from_y(double in_y) const {
     if(is_ray) return top->x;
     return bottom->x + (top->x - bottom->x) * (in_y - bottom->y) / (top->y - bottom->y);
   }
 
+  double y_from_x(double in_x) const {
+    return bottom->y + (top->y - bottom->y) * (in_x - bottom->x) / (top->x - bottom->x);
+  }
+
   bool operator<(const segment &other) const {
-    if(other.is_ray || is_ray) return top->x < other.top->x;
-    if(other.top->y > top->y) return other < *this;
-    if(top->x < bottom->x) return is_not_cw(top, bottom, other.top);
-    return is_not_cw(bottom, top, other.top);
+    if(other.is_ray) {
+      if(is_ray) {
+        if(other.top->x == top->x) return top->y > other.top->y;
+        return top->x < other.top->x;
+      }
+      if(other.top->x <= std::min(top->x, bottom->x)) return false;
+      if(other.top->x >= std::max(top->x, bottom->x)) return true;
+      if(top->x < bottom->x) return !is_cw(top, bottom, other.top);
+      return is_cw(bottom, top, other.top);
+    }
+    if(is_ray) return !(other < *this);
+    if(other.top->y > top->y) return !(other < *this);
+    if(top->x < bottom->x) return !is_cw(top, bottom, other.top);
+    return is_cw(bottom, top, other.top);
   }
 
   bool intersects(const segment * other) const {
@@ -131,11 +148,11 @@ public:
     if(top->x > bottom->x) {
       if(other->top->x > top->x) return false;
       if(other->top->x < bottom->x) return false;
-      return is_not_cw(bottom, top, other->top);
+      return !is_cw(bottom, top, other->top);
     }
     if(other->top->x > bottom->x) return false;
     if(other->top->x < top->x) return false;
-    return is_not_cw(top, bottom, other->top);
+    return !is_cw(top, bottom, other->top);
   }
 };
 
@@ -145,6 +162,11 @@ std::istream &operator>>(std::istream &in, segment &out_segment) {
   if(one == two) out_segment.set_points(one);
   else out_segment.set_points(one, two);
   return in;
+}
+
+std::ostream &operator<<(std::ostream &out, const segment &in_segment) {
+  out << (in_segment.is_ray ? "R " : "S ") << *in_segment.top << " " << *in_segment.bottom;
+  return out;
 }
 
 class scan_line {
@@ -166,7 +188,7 @@ public:
   enum class type { begin, end };
   event(type t, segment *who, point *where, bool own_point = false) : t(t), who(who), where(where), is_own_point(own_point) {}
   ~event() {
-    if(is_own_point) delete where;
+    // if(is_own_point) delete where;
   }
   type t;
   segment *who;
@@ -182,10 +204,16 @@ public:
   }
 };
 
+std::ostream& operator<<(std::ostream &out, const event &in_event) {
+  out << (in_event.t == event::type::begin ? "[begin " : "[end ");
+  out << "(" << *in_event.who << ") at (" << *in_event.where << ")]";
+  return out;
+}
+
 class intersection {
 public:
-  intersection(segment *one, segment *two) : one(one), two(two) {}
-  segment *one, *two;
+  intersection(segment *r, segment *s) : r(r), s(s) {}
+  const segment *r, *s;
 };
 
 class segment_pointer_comparator {
@@ -193,13 +221,35 @@ public:
   bool operator()(segment *left, segment *right) { return *left < *right; }
 };
 
+class event_pointer_comparator {
+public:
+  bool operator()(event *left, event *right) { return *left < *right; }
+};
+
 class find_intersections {
   std::vector<intersection*> intersections;
-  std::set<event*> events;
-  std::set<events*> ray_ends;
+  std::set<event*, event_pointer_comparator> events;
+  std::set<event*, event_pointer_comparator> ray_ends;
   std::set<segment*, segment_pointer_comparator> segments;
 
   void register_intersection(segment *one, segment *two) {
+    segment *r = one->is_ray ? one : two;
+    segment *s = one->is_ray ? two : one;
+    TRACE_LINE("---- Preregister intersection of ray " << *r << " and segment " << *s);
+    double intersection_y = s->y_from_x(r->top->x);
+    if(r->end_event == nullptr) {
+      event *ray_end = new event(event::type::end, r, new point(r->top->x, intersection_y), true);
+      ray_ends.insert(ray_end);
+      r->end_event = ray_end;
+      r->intersector = s;
+    } else {
+      if(intersection_y > r->end_event->where->y) {
+        ray_ends.erase(r->end_event);
+        r->end_event->where->y = intersection_y;
+        r->intersector = s;
+        ray_ends.insert(r->end_event);
+      }
+    }
   }
 
 public:
@@ -208,54 +258,57 @@ public:
     events.clear();
     ray_ends.clear();
     segments.clear();
-    line.y = std::numeric_limits<double>::max();
-    for(segment* b : bars) {
-      events.emplace(event::type::begin, bar, bar->top);
-      events.emplace(event::type::end, bar, bar->bottom);
+    TRACE_LINE("---- (01) Building segments " << bars.size());
+    for(segment* bar : bars) {
+      events.emplace(new event(event::type::begin, bar, bar->top));
+      events.emplace(new event(event::type::end, bar, bar->bottom));
     }
-    for(segment* b : balls)
-      events.emplace(event::type::begin, bar, bar->top);
+    TRACE_LINE("---- (02) Adding rays " << balls.size());
+    for(segment* ball : balls)
+      events.emplace(new event(event::type::begin, ball, ball->top));
+    TRACE_LINE("---- (03) Walk through events");
     while(events.size() > 0) {
-      if(ray_ends.size() > 0 && *ray_ends[0] < *events[0]) {
-        event* ray_end = ray_ends[0];
-        ray_end.pop_front();
-        line.y = ray_end->where->y;
-        intersections.emplace(ray_end->who, ray_end->who->intersector);
+      if(ray_ends.size() > 0 && **ray_ends.begin() < **events.begin()) {
+        event* ray_end = *ray_ends.begin();
+        TRACE_LINE("---- " << *ray_end);
+        ray_ends.erase(ray_ends.begin());
+        TRACE_LINE("---- Put intersection of ray " << *ray_end->who << " and segment " << *ray_end->who->intersector);
+        intersections.push_back(new intersection(ray_end->who, ray_end->who->intersector));
         segments.erase(ray_end->who);
-        delete ray_end;
+        // delete ray_end;
       } else {
-        event *e = events[0];
-        events.pop_front();
-        line.y = e->where->y;
-        auto bigger = segments.upper_bound(events.who);
+        event *e = *events.begin();
+        TRACE_LINE("---- " << *e);
+        events.erase(events.begin());
         if(e->t == event::type::begin) {
-          if(bigger != segments.end()) {
-            if((*bigger)->intersects(e->who)) {
-              segment *r = e->who->is_ray ? e->who : (*bigger);
-              segment *s = e->who->is_ray ? (*bigger) : e->who;
-              if(r->end_event == nullptr) {
-                event *ray_end = new event(end, r, new point(r->top->x, s->y_from_x(r->top->x)), true);
-                ray_ends.insert(ray_end);
-                r->end_event = ray_end;
-                r->intersector = s;
-              } else {
-                double new_y = s->y_from_x(r->top->x);
-                if(new_y > r->end_event->where->y) {
-                  ray_ends.erase(r->end_event);
-                  r->where->y = new_y;
-                  r->intersector = s;
-                  ray_ends.insert(r->end_event);
-                }
-              }
-            }
+          std::pair<std::set<segment*>::iterator, bool> inserted = segments.insert(e->who);
+          if(next(inserted.first) != segments.end()) {
+            segment *bigger = *next(inserted.first);
+            if(bigger->intersects(e->who))
+              register_intersection(bigger, e->who);
           }
-          if(bigger != segments.begin()) {
+          if(inserted.first != segments.begin()) {
+            segment *smaller = *prev(inserted.first);
+            if(smaller->intersects(e->who))
+              register_intersection(smaller, e->who);
           }
+        } else {
+          std::set<segment*>::iterator place_it = segments.find(e->who);
+          ASSERT(place_it != segments.end());
+          if(place_it != segments.begin() && next(place_it) != segments.end()) {
+            segment *bigger = *next(place_it);
+            segment *smaller = *prev(place_it);
+            if(bigger->intersects(smaller))
+              register_intersection(bigger, smaller);
+          }
+          segments.erase(place_it);
         }
       }
     }
+    return intersections;
   }
 };
+
 void segment_test() {
   int T;
   // tangents
@@ -273,6 +326,13 @@ void segment_test() {
     double y;
     std::cin >> y >> testable;
     std::cout << std::setprecision(2) << testable.x_from_y(y) << "\n";
+  }
+  std::cin >> T;
+  while(T--) {
+    segment testable;
+    double x;
+    std::cin >> x >> testable;
+    std::cout << std::setprecision(2) << testable.y_from_x(x) << "\n";
   }
 }
 
@@ -294,7 +354,7 @@ void test_cw() {
   while(T--) {
     point pivot, from, to;
     std::cin >> pivot >> from >> to;
-    if(is_not_cw(&pivot, &from, &to)) std::cout << "true\n";
+    if(!is_cw(&pivot, &from, &to)) std::cout << "true\n";
     else std::cout << "false\n";
   }
 }
@@ -309,14 +369,65 @@ void test_intersection() {
   }
 }
 
+void test_segment_order() {
+  int T;
+  std::cin >> T;
+  segment_pointer_comparator comparator;
+  while(T--) {
+    segment one, two;
+    std::cin >> one >> two;
+    ASSERT(comparator(&one, &two) != comparator(&two, &one))
+    std::cout << (comparator(&one, &two) ? "less\n" : "not less\n");
+  }
+}
+
 void unit_tests() {
   segment_test();
   scan_line_test();
   test_cw();
   test_intersection();
+  test_segment_order();
 }
 
 int main() {
-  UNIT_TESTS()
+  UNIT_TESTS();
+  int N, M;
+  std::cin >> N >> M;
+  std::vector<segment*> segments;
+  segments.reserve(N);
+  std::vector<segment*> rays;
+  rays.reserve(N);
+  TRACE_LINE("(01) Reading segments");
+  for(int i = 0; i < N; ++i) {
+    segment *new_segment = new segment();
+    std::cin >> *new_segment;
+    segments.push_back(new_segment);
+    new_segment->final_x = new_segment->bottom->x;
+    segment *segment_ray = new segment(new_segment->bottom);
+    segment_ray->owner = new_segment;
+    rays.push_back(segment_ray);
+  }
+  TRACE_LINE("(02) Searching falls");
+  find_intersections ray_finder;
+  std::vector<intersection*> ray_falls = ray_finder(segments, rays);
+  for(auto inter_rit = ray_falls.rbegin(); inter_rit != ray_falls.rend(); ++inter_rit) {
+    (*inter_rit)->r->owner->final_x = (*inter_rit)->r->intersector->final_x;
+  }
+  rays.clear();
+  rays.reserve(M);
+  TRACE_LINE("(03) Reading balls");
+  for(int i = 0; i < M; ++i) {
+    point *ball = new point;
+    std::cin >> *ball;
+    segment *projectile = new segment(ball);
+    rays.push_back(projectile);
+  }
+  TRACE_LINE("(04) Searching ball falls");
+  ray_falls = ray_finder(segments, rays);
+  TRACE_LINE("(05) Outputting data");
+  for(auto ray : rays) {
+    if(ray->intersector == nullptr) std::cout << ray->top->x << "\n";
+    std::cout << ray->intersector->final_x << "\n";
+  }
   return 0;
 }

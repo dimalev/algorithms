@@ -6,6 +6,12 @@
 9
 8
 4
+6
+2
+0
+0
+4
+6
 false
 false
 true
@@ -23,3 +29,14 @@ true
 true
 false
 true
+less
+not less
+less
+not less
+not less
+less
+less
+less
+not less
+less
+less
