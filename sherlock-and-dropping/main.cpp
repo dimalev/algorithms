@@ -130,12 +130,17 @@ public:
         if(other.top->x == top->x) return top->y > other.top->y;
         return top->x < other.top->x;
       }
-      if(other.top->x <= std::min(top->x, bottom->x)) return false;
+      if(other.top->x < std::min(top->x, bottom->x)) return false;
       if(other.top->x >= std::max(top->x, bottom->x)) return true;
       if(top->x < bottom->x) return !is_cw(top, bottom, other.top);
       return is_cw(bottom, top, other.top);
     }
-    if(is_ray) return !(other < *this);
+    if(is_ray) {
+      if(top->x < std::min(other.top->x, other.bottom->x)) return true;
+      if(top->x >= std::max(other.top->x, other.bottom->x)) return false;
+      if(other.top->x < other.bottom->x) return is_cw(other.top, other.bottom, top);
+      return !is_cw(other.bottom, other.top, top);
+    }
     if(other.top->y > top->y) return !(other < *this);
     if(top->x < bottom->x) return is_ccw(top, bottom, other.top);
     return is_cw(bottom, top, other.top);
@@ -176,7 +181,6 @@ public:
   enum class type { begin, end };
   event(type t, segment *who, point *where, bool own_point = false) : t(t), who(who), where(where), is_own_point(own_point) {}
   ~event() {
-    std::cerr << "--------- event destructor called" << std::endl;
     // if(is_own_point) delete where;
   }
   type t;
@@ -189,8 +193,11 @@ public:
     if(other.where->y < where->y) return true;
     if(other.t == type::end && t == type::begin) return false;
     if(other.t == type::begin && t == type::end) return true;
-    if(who->is_ray == other.who->is_ray) return where->x < other.where->x;
-    return who->is_ray;
+    if(where->x == other.where->x) {
+      if(who->is_ray == other.who->is_ray) return false;
+      return who->is_ray;
+    }
+    return where->x < other.where->x;
   }
 
   bool operator==(const event & other) {
@@ -229,7 +236,7 @@ class find_intersections {
   void register_intersection(segment *one, segment *two) {
     segment *r = one->is_ray ? one : two;
     segment *s = one->is_ray ? two : one;
-    TRACE_LINE("---- Preregister intersection of ray " << *r << " and segment " << *s);
+    // TRACE_LINE("---- Preregister intersection of ray " << *r << " and segment " << *s);
     double intersection_y = s->y_from_x(r->top->x);
     if(r->end_event == nullptr) {
       event *ray_end = new event(event::type::end, r, new point(r->top->x, intersection_y), true);
@@ -247,7 +254,7 @@ class find_intersections {
   }
 
 public:
-  std::vector<intersection*> operator()(const std::vector<segment*> &bars, const std::vector<segment*> &balls) {
+  std::vector<intersection*> operator()(const std::vector<segment*> &bars, const std::vector<segment*> &balls, bool record_intersections =true) {
     intersections.clear();
     events.clear();
     ray_ends.clear();
@@ -267,10 +274,14 @@ public:
       if(ray_ends.size() > 0 && **ray_ends.begin() < **events.begin()) {
         event* ray_end = *ray_ends.begin();
         ray_ends.erase(ray_ends.begin());
-        TRACE_LINE("---- " << *ray_end);
-        TRACE_LINE("---- Put intersection of ray " << *ray_end->who << " and segment " << *ray_end->who->intersector);
-        intersections.push_back(new intersection(ray_end->who, ray_end->who->intersector));
+        // TRACE_LINE("---- " << *ray_end);
+        // TRACE_LINE("---- Put intersection of ray " << *ray_end->who << " and segment " << *ray_end->who->intersector);
+        if(record_intersections)
+          intersections.push_back(new intersection(ray_end->who, ray_end->who->intersector));
         auto place_it = segments.find(ray_end->who);
+#ifdef ALGO_DEBUG
+        if(place_it == segments.end()) TRACE_LINE("size of segments: " << segments.size());
+#endif
         if(place_it != segments.begin() && next(place_it) != segments.end()) {
           segment *bigger = *next(place_it);
           segment *smaller = *prev(place_it);
@@ -282,7 +293,7 @@ public:
       } else {
         event *e = *events.begin();
         events.erase(events.begin());
-        TRACE_LINE("---- " << *e);
+        // TRACE_LINE("---- " << *e);
         if(e->t == event::type::begin) {
           std::pair<std::set<segment*>::iterator, bool> inserted = segments.insert(e->who);
           if(next(inserted.first) != segments.end()) {
@@ -415,7 +426,7 @@ int main() {
     balls.push_back(projectile);
   }
   TRACE_LINE("(04) Searching ball falls");
-  ray_falls = ray_finder(segments, balls);
+  ray_falls = ray_finder(segments, balls, false);
   TRACE_LINE("(05) Outputting data");
   for(auto ball : balls) {
     if(ball->intersector == nullptr) std::cout << static_cast<int>(ball->top->x) << std::endl;
