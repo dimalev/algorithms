@@ -57,7 +57,7 @@ std::istream& operator>>(std::istream &in, point &out_point) {
 }
 
 std::ostream& operator<<(std::ostream &out, const point &in_point) {
-  out << in_point.x << " " << in_point.y;
+  out << static_cast<int>(in_point.x) << " " << static_cast<int>(in_point.y);
   return out;
 }
 
@@ -270,7 +270,14 @@ public:
         TRACE_LINE("---- " << *ray_end);
         TRACE_LINE("---- Put intersection of ray " << *ray_end->who << " and segment " << *ray_end->who->intersector);
         intersections.push_back(new intersection(ray_end->who, ray_end->who->intersector));
-        segments.erase(ray_end->who);
+        auto place_it = segments.find(ray_end->who);
+        if(place_it != segments.begin() && next(place_it) != segments.end()) {
+          segment *bigger = *next(place_it);
+          segment *smaller = *prev(place_it);
+          if(bigger->intersects(smaller))
+            register_intersection(bigger, smaller);
+        }
+        segments.erase(place_it);
         // delete ray_end;
       } else {
         event *e = *events.begin();
@@ -407,16 +414,12 @@ int main() {
     segment *projectile = new segment(ball);
     balls.push_back(projectile);
   }
-  for(auto ball : balls) {
-    std::cout << *ball << ": " << std::endl;
-  }
   TRACE_LINE("(04) Searching ball falls");
-  find_intersections ball_finder;
-  ray_falls = ball_finder(segments, balls);
+  ray_falls = ray_finder(segments, balls);
   TRACE_LINE("(05) Outputting data");
   for(auto ball : balls) {
-    if(ball->intersector == nullptr) std::cout << ball->top->x << std::endl;
-    std::cout << ball->intersector->final_x << std::endl;
+    if(ball->intersector == nullptr) std::cout << static_cast<int>(ball->top->x) << std::endl;
+    else std::cout << static_cast<int>(ball->intersector->final_x) << std::endl;
   }
   ray_falls.clear();
   return 0;
