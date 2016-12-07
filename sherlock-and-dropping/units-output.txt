@@ -12,11 +12,6 @@
 0
 4
 6
-false
-false
-true
-false
-true
 true
 false
 true
@@ -40,3 +35,5 @@ less
 not less
 less
 less
+not less
+not less

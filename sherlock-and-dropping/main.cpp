@@ -29,18 +29,20 @@ public:
   point(double x, double y) : x(x), y(y) {}
   double x, y;
 
-  bool operator==(const point &other) {
+  bool operator==(const point &other) const {
     return almost_equal(x, other.x, 2) && almost_equal(y, other.y, 2);
   }
-  point operator-(const point &other) {
+  point operator-(const point &other) const {
     return point(x - other.x, y - other.y);
   }
 };
 
 bool is_ccw(point * const pivot, point * const from, point * const to) {
-  point norm_from = *from - *pivot; // 0 1
-  point norm_to = *to - *pivot; // 1 0
-  return norm_from.y * norm_to.x < norm_from.x * norm_to.y;
+  double from_dx = from->x - pivot->x;
+  double from_dy = from->y - pivot->y;
+  double to_dx = to->x - pivot->x;
+  double to_dy = to->y - pivot->y;
+  return from_dy * to_dx < from_dx * to_dy;
 }
 
 bool is_cw(point * const pivot, point * const from, point * const to) {
@@ -135,7 +137,7 @@ public:
     }
     if(is_ray) return !(other < *this);
     if(other.top->y > top->y) return !(other < *this);
-    if(top->x < bottom->x) return !is_cw(top, bottom, other.top);
+    if(top->x < bottom->x) return is_ccw(top, bottom, other.top);
     return is_cw(bottom, top, other.top);
   }
 
@@ -169,25 +171,12 @@ std::ostream &operator<<(std::ostream &out, const segment &in_segment) {
   return out;
 }
 
-class scan_line {
-public:
-  explicit scan_line(double y) : y(y) {}
-  double y;
-
-  bool less(segment *left, segment *right) {
-    double left_x = left->x_from_y(y),
-      right_x = right->x_from_y(y);
-    if(almost_equal(left_x, right_x, 2))
-      return left->tan < right->tan;
-    return left_x < right_x;
-  }
-};
-
 class event {
 public:
   enum class type { begin, end };
   event(type t, segment *who, point *where, bool own_point = false) : t(t), who(who), where(where), is_own_point(own_point) {}
   ~event() {
+    std::cerr << "--------- event destructor called" << std::endl;
     // if(is_own_point) delete where;
   }
   type t;
@@ -200,7 +189,12 @@ public:
     if(other.where->y < where->y) return true;
     if(other.t == type::end && t == type::begin) return false;
     if(other.t == type::begin && t == type::end) return true;
+    if(who->is_ray == other.who->is_ray) return where->x < other.where->x;
     return who->is_ray;
+  }
+
+  bool operator==(const event & other) {
+    return other.who == who && other.where == where && t == t;
   }
 };
 
@@ -253,33 +247,35 @@ class find_intersections {
   }
 
 public:
-  std::vector<intersection*> operator()(std::vector<segment*> &bars, std::vector<segment*> &balls) {
+  std::vector<intersection*> operator()(const std::vector<segment*> &bars, const std::vector<segment*> &balls) {
     intersections.clear();
     events.clear();
     ray_ends.clear();
     segments.clear();
     TRACE_LINE("---- (01) Building segments " << bars.size());
     for(segment* bar : bars) {
-      events.emplace(new event(event::type::begin, bar, bar->top));
-      events.emplace(new event(event::type::end, bar, bar->bottom));
+      events.insert(new event(event::type::begin, bar, bar->top));
+      events.insert(new event(event::type::end, bar, bar->bottom));
     }
     TRACE_LINE("---- (02) Adding rays " << balls.size());
-    for(segment* ball : balls)
-      events.emplace(new event(event::type::begin, ball, ball->top));
-    TRACE_LINE("---- (03) Walk through events");
-    while(events.size() > 0) {
+    for(segment* ball : balls) {
+      events.insert(new event(event::type::begin, ball, ball->top));
+    }
+    ASSERT(events.size() == 2 * bars.size() + balls.size());
+    TRACE_LINE("---- (03) Walk through events " << events.size());
+    while(!events.empty()) {
       if(ray_ends.size() > 0 && **ray_ends.begin() < **events.begin()) {
         event* ray_end = *ray_ends.begin();
-        TRACE_LINE("---- " << *ray_end);
         ray_ends.erase(ray_ends.begin());
+        TRACE_LINE("---- " << *ray_end);
         TRACE_LINE("---- Put intersection of ray " << *ray_end->who << " and segment " << *ray_end->who->intersector);
         intersections.push_back(new intersection(ray_end->who, ray_end->who->intersector));
         segments.erase(ray_end->who);
         // delete ray_end;
       } else {
         event *e = *events.begin();
-        TRACE_LINE("---- " << *e);
         events.erase(events.begin());
+        TRACE_LINE("---- " << *e);
         if(e->t == event::type::begin) {
           std::pair<std::set<segment*>::iterator, bool> inserted = segments.insert(e->who);
           if(next(inserted.first) != segments.end()) {
@@ -295,6 +291,10 @@ public:
         } else {
           std::set<segment*>::iterator place_it = segments.find(e->who);
           ASSERT(place_it != segments.end());
+// #ifdef ALGO_DEBUG
+//           for(segment* s : segments) std::cerr << *s << "; ";
+//           std::cerr << std::endl;
+// #endif
           if(place_it != segments.begin() && next(place_it) != segments.end()) {
             segment *bigger = *next(place_it);
             segment *smaller = *prev(place_it);
@@ -336,18 +336,6 @@ void segment_test() {
   }
 }
 
-void scan_line_test() {
-  int T;
-  std::cin >> T;
-  while(T--) {
-    segment one, two;
-    double y;
-    std::cin >> y >> one >> two;
-    if(scan_line(y).less(&one, &two)) std::cout << "true\n";
-    else std::cout << "false\n";
-  }
-}
-
 void test_cw() {
   int T;
   std::cin >> T;
@@ -376,14 +364,12 @@ void test_segment_order() {
   while(T--) {
     segment one, two;
     std::cin >> one >> two;
-    ASSERT(comparator(&one, &two) != comparator(&two, &one))
     std::cout << (comparator(&one, &two) ? "less\n" : "not less\n");
   }
 }
 
 void unit_tests() {
   segment_test();
-  scan_line_test();
   test_cw();
   test_intersection();
   test_segment_order();
@@ -413,21 +399,25 @@ int main() {
   for(auto inter_rit = ray_falls.rbegin(); inter_rit != ray_falls.rend(); ++inter_rit) {
     (*inter_rit)->r->owner->final_x = (*inter_rit)->r->intersector->final_x;
   }
-  rays.clear();
-  rays.reserve(M);
+  std::vector<segment*> balls;
   TRACE_LINE("(03) Reading balls");
   for(int i = 0; i < M; ++i) {
     point *ball = new point;
     std::cin >> *ball;
     segment *projectile = new segment(ball);
-    rays.push_back(projectile);
+    balls.push_back(projectile);
+  }
+  for(auto ball : balls) {
+    std::cout << *ball << ": " << std::endl;
   }
   TRACE_LINE("(04) Searching ball falls");
-  ray_falls = ray_finder(segments, rays);
+  find_intersections ball_finder;
+  ray_falls = ball_finder(segments, balls);
   TRACE_LINE("(05) Outputting data");
-  for(auto ray : rays) {
-    if(ray->intersector == nullptr) std::cout << ray->top->x << "\n";
-    std::cout << ray->intersector->final_x << "\n";
+  for(auto ball : balls) {
+    if(ball->intersector == nullptr) std::cout << ball->top->x << std::endl;
+    std::cout << ball->intersector->final_x << std::endl;
   }
+  ray_falls.clear();
   return 0;
 }
