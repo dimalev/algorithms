@@ -30,7 +30,7 @@ public:
   double x, y;
 
   bool operator==(const point &other) const {
-    return almost_equal(x, other.x, 2) && almost_equal(y, other.y, 2);
+    return almost_equal(x, other.x, 10) && almost_equal(y, other.y, 10);
   }
   point operator-(const point &other) const {
     return point(x - other.x, y - other.y);
@@ -100,7 +100,7 @@ public:
   }
   virtual ~segment() {
     if(is_own_points) {
-      // delete top; delete bottom;
+      delete top; delete bottom;
     }
   }
   point *top, *bottom;
@@ -188,7 +188,7 @@ public:
   enum class type { begin, end };
   event(type t, segment *who, point *where, bool own_point = false) : t(t), who(who), where(where), is_own_point(own_point) {}
   ~event() {
-    // if(is_own_point) delete where;
+    if(is_own_point) delete where;
   }
   type t;
   segment *who;
@@ -201,7 +201,7 @@ public:
     if(other.t == type::end && t == type::begin) return false;
     if(other.t == type::begin && t == type::end) return true;
     if(where->x == other.where->x) {
-      if(who->is_ray == other.who->is_ray) return false;
+      if(who->is_ray == other.who->is_ray) return who->top > other.who->top;
       return !who->is_ray;
     }
     return where->x < other.where->x;
@@ -247,15 +247,19 @@ class find_intersections {
     double intersection_y = s->y_from_x(r->top->x);
     if(r->end_event == nullptr) {
       event *ray_end = new event(event::type::end, r, new point(r->top->x, intersection_y), true);
-      ray_ends.insert(ray_end);
+      auto result = ray_ends.insert(ray_end);
+      ASSERT(result.second);
       r->end_event = ray_end;
       r->intersector = s;
     } else {
       if(intersection_y > r->end_event->where->y) {
-        ray_ends.erase(r->end_event);
+        auto ev_it = ray_ends.find(r->end_event);
+        ASSERT(*ev_it == r->end_event);
+        ray_ends.erase(ev_it);
         r->end_event->where->y = intersection_y;
         r->intersector = s;
-        ray_ends.insert(r->end_event);
+        auto result = ray_ends.insert(r->end_event);
+        ASSERT(result.second);
       }
     }
   }
@@ -271,6 +275,7 @@ public:
       events.insert(new event(event::type::begin, bar, bar->top));
       events.insert(new event(event::type::end, bar, bar->bottom));
     }
+    ASSERT(events.size() == 2 * bars.size());
     TRACE_LINE("---- (02) Adding rays " << balls.size());
     for(segment* ball : balls) {
       events.insert(new event(event::type::begin, ball, ball->top));
@@ -280,33 +285,17 @@ public:
     double last_y = std::numeric_limits<double>::max();
     while(!events.empty()) {
       if(ray_ends.size() > 0 && (*ray_ends.begin())->where->y >= (*events.begin())->where->y) {
-        event* ray_end = *ray_ends.begin();
+        auto event_it = ray_ends.begin();
+        event* ray_end = *event_it;
         ASSERT(last_y >= ray_end->where->y);
         last_y = ray_end->where->y;
-        ray_ends.erase(ray_ends.begin());
-        // TRACE_LINE("---- " << *ray_end);
+        ray_ends.erase(event_it);
         // TRACE_LINE("---- Put intersection of ray " << *ray_end->who << " and segment " << *ray_end->who->intersector);
-        if(record_intersections)
+        if(record_intersections && ray_end->who->intersector != nullptr)
           intersections.push_back(new intersection(ray_end->who, ray_end->who->intersector));
         auto place_it = segments.find(ray_end->who);
         ASSERT(place_it != segments.end());
         ASSERT(*place_it == ray_end->who);
-        if(*place_it != ray_end->who) {
-          if(place_it != segments.end()) TRACE_LINE(**place_it << " != " << *ray_end->who);
-          bool is_found = false;
-          for(segment *s : segments) {
-            if(s == ray_end->who) {
-              TRACE_LINE("---- found ray! " << last_y);
-              is_found = true;
-            } else {
-              if(is_found && *s < *ray_end->who)
-                TRACE_LINE("---- " << *s << " < " << *ray_end->who);
-              if(!is_found && *ray_end->who < *s)
-                TRACE_LINE("---- " << *ray_end->who << " < " << *s);
-            }
-          }
-          exit(1);
-        }
         if(place_it != segments.begin() && next(place_it) != segments.end()) {
           segment *bigger = *next(place_it);
           segment *smaller = *prev(place_it);
@@ -314,12 +303,13 @@ public:
             register_intersection(bigger, smaller);
         }
         segments.erase(place_it);
-        // delete ray_end;
+        delete ray_end;
       } else {
-        event *e = *events.begin();
+        auto event_it = events.begin();
+        event *e = *event_it;
         ASSERT(last_y >= e->where->y);
         last_y = e->where->y;
-        events.erase(events.begin());
+        events.erase(event_it);
         // TRACE_LINE("---- " << *e);
         if(e->t == event::type::begin) {
           std::pair<std::set<segment*>::iterator, bool> inserted = segments.insert(e->who);
@@ -327,41 +317,16 @@ public:
             segment *bigger = *next(inserted.first);
             if(bigger->intersects(e->who))
               register_intersection(bigger, e->who);
-            auto nexts = next(inserted.first);
-            while(nexts != segments.end()) {
-              if(**nexts < *e->who) {
-                TRACE_LINE("xxxx " << *e->who << " is not less then " << **nexts);
-                exit(1);
-              }
-              ++nexts;
-            }
           }
           if(inserted.first != segments.begin()) {
             segment *smaller = *prev(inserted.first);
             if(smaller->intersects(e->who))
               register_intersection(smaller, e->who);
-            auto prevs = inserted.first;
-            do {
-              --prevs;
-              if(*e->who < **prevs) {
-                TRACE_LINE("xxxx " << *e->who << " is less then " << **prevs);
-                // ++prevs;
-                // while(prevs != inserted.first) {
-                //   TRACE_LINE("xxxx " << **prevs);
-                //   ++prevs;
-                // }
-                exit(1);
-              }
-            } while(prevs != segments.begin());
           }
         } else {
           std::set<segment*>::iterator place_it = segments.find(e->who);
           ASSERT(place_it != segments.end());
           ASSERT(*place_it == e->who);
-// #ifdef ALGO_DEBUG
-//           for(segment* s : segments) std::cerr << *s << "; ";
-//           std::cerr << std::endl;
-// #endif
           if(place_it != segments.begin() && next(place_it) != segments.end()) {
             segment *bigger = *next(place_it);
             segment *smaller = *prev(place_it);
