@@ -117,11 +117,11 @@ public:
 
   double x_from_y(double in_y) const {
     if(is_ray) return top->x;
-    return bottom->x + (top->x - bottom->x) * (in_y - bottom->y) / (top->y - bottom->y);
+    return bottom->x + (top->x - bottom->x) / (top->y - bottom->y) * (in_y - bottom->y);
   }
 
   double y_from_x(double in_x) const {
-    return bottom->y + (top->y - bottom->y) * (in_x - bottom->x) / (top->x - bottom->x);
+    return bottom->y + (top->y - bottom->y) / (top->x - bottom->x) * (in_x - bottom->x);
   }
 
   bool operator<(const segment &other) const {
@@ -131,19 +131,26 @@ public:
         return top->x < other.top->x;
       }
       if(other.top->x < std::min(top->x, bottom->x)) return false;
-      if(other.top->x >= std::max(top->x, bottom->x)) return true;
+      if(other.top->x > std::max(top->x, bottom->x)) return true;
       if(top->x < bottom->x) return !is_cw(top, bottom, other.top);
       return is_cw(bottom, top, other.top);
     }
     if(is_ray) {
       if(top->x < std::min(other.top->x, other.bottom->x)) return true;
-      if(top->x >= std::max(other.top->x, other.bottom->x)) return false;
+      if(top->x > std::max(other.top->x, other.bottom->x)) return false;
       if(other.top->x < other.bottom->x) return is_cw(other.top, other.bottom, top);
       return !is_cw(other.bottom, other.top, top);
     }
-    if(other.top->y > top->y) return !(other < *this);
+    if(other.top->y > top->y) {
+      if(other.top->x < other.bottom->x) return is_cw(other.top, other.bottom, top);
+      return is_ccw(other.bottom, other.top, top);
+    }
     if(top->x < bottom->x) return is_ccw(top, bottom, other.top);
     return is_cw(bottom, top, other.top);
+  }
+
+  bool operator==(const segment &other) const {
+    return *top == *other.top && *bottom == *other.bottom;
   }
 
   bool intersects(const segment * other) const {
@@ -195,7 +202,7 @@ public:
     if(other.t == type::begin && t == type::end) return true;
     if(where->x == other.where->x) {
       if(who->is_ray == other.who->is_ray) return false;
-      return who->is_ray;
+      return !who->is_ray;
     }
     return where->x < other.where->x;
   }
@@ -270,18 +277,36 @@ public:
     }
     ASSERT(events.size() == 2 * bars.size() + balls.size());
     TRACE_LINE("---- (03) Walk through events " << events.size());
+    double last_y = std::numeric_limits<double>::max();
     while(!events.empty()) {
-      if(ray_ends.size() > 0 && **ray_ends.begin() < **events.begin()) {
+      if(ray_ends.size() > 0 && (*ray_ends.begin())->where->y >= (*events.begin())->where->y) {
         event* ray_end = *ray_ends.begin();
+        ASSERT(last_y >= ray_end->where->y);
+        last_y = ray_end->where->y;
         ray_ends.erase(ray_ends.begin());
         // TRACE_LINE("---- " << *ray_end);
         // TRACE_LINE("---- Put intersection of ray " << *ray_end->who << " and segment " << *ray_end->who->intersector);
         if(record_intersections)
           intersections.push_back(new intersection(ray_end->who, ray_end->who->intersector));
         auto place_it = segments.find(ray_end->who);
-#ifdef ALGO_DEBUG
-        if(place_it == segments.end()) TRACE_LINE("size of segments: " << segments.size());
-#endif
+        ASSERT(place_it != segments.end());
+        ASSERT(*place_it == ray_end->who);
+        if(*place_it != ray_end->who) {
+          if(place_it != segments.end()) TRACE_LINE(**place_it << " != " << *ray_end->who);
+          bool is_found = false;
+          for(segment *s : segments) {
+            if(s == ray_end->who) {
+              TRACE_LINE("---- found ray! " << last_y);
+              is_found = true;
+            } else {
+              if(is_found && *s < *ray_end->who)
+                TRACE_LINE("---- " << *s << " < " << *ray_end->who);
+              if(!is_found && *ray_end->who < *s)
+                TRACE_LINE("---- " << *ray_end->who << " < " << *s);
+            }
+          }
+          exit(1);
+        }
         if(place_it != segments.begin() && next(place_it) != segments.end()) {
           segment *bigger = *next(place_it);
           segment *smaller = *prev(place_it);
@@ -292,6 +317,8 @@ public:
         // delete ray_end;
       } else {
         event *e = *events.begin();
+        ASSERT(last_y >= e->where->y);
+        last_y = e->where->y;
         events.erase(events.begin());
         // TRACE_LINE("---- " << *e);
         if(e->t == event::type::begin) {
@@ -300,15 +327,37 @@ public:
             segment *bigger = *next(inserted.first);
             if(bigger->intersects(e->who))
               register_intersection(bigger, e->who);
+            auto nexts = next(inserted.first);
+            while(nexts != segments.end()) {
+              if(**nexts < *e->who) {
+                TRACE_LINE("xxxx " << *e->who << " is not less then " << **nexts);
+                exit(1);
+              }
+              ++nexts;
+            }
           }
           if(inserted.first != segments.begin()) {
             segment *smaller = *prev(inserted.first);
             if(smaller->intersects(e->who))
               register_intersection(smaller, e->who);
+            auto prevs = inserted.first;
+            do {
+              --prevs;
+              if(*e->who < **prevs) {
+                TRACE_LINE("xxxx " << *e->who << " is less then " << **prevs);
+                // ++prevs;
+                // while(prevs != inserted.first) {
+                //   TRACE_LINE("xxxx " << **prevs);
+                //   ++prevs;
+                // }
+                exit(1);
+              }
+            } while(prevs != segments.begin());
           }
         } else {
           std::set<segment*>::iterator place_it = segments.find(e->who);
           ASSERT(place_it != segments.end());
+          ASSERT(*place_it == e->who);
 // #ifdef ALGO_DEBUG
 //           for(segment* s : segments) std::cerr << *s << "; ";
 //           std::cerr << std::endl;
@@ -350,7 +399,7 @@ void segment_test() {
     segment testable;
     double x;
     std::cin >> x >> testable;
-    std::cout << std::setprecision(2) << testable.y_from_x(x) << "\n";
+    std::cout << std::setprecision(2) << static_cast<int>(testable.y_from_x(x)) << "\n";
   }
 }
 
@@ -382,6 +431,11 @@ void test_segment_order() {
   while(T--) {
     segment one, two;
     std::cin >> one >> two;
+    if(one == two) {
+      ASSERT(comparator(&one, &two) == comparator(&two, &one));
+    } else {
+      ASSERT(comparator(&one, &two) != comparator(&two, &one));
+    }
     std::cout << (comparator(&one, &two) ? "less\n" : "not less\n");
   }
 }

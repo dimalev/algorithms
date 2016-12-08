@@ -24,17 +24,53 @@ true
 true
 false
 true
-less
-not less
-less
-not less
 not less
 less
 less
-less
-not less
 less
 less
 not less
 not less
 less
+less
+less
+not less
+not less
+not less
+less
+less
+not less
+not less
+not less
+not less
+less
+not less
+not less
+not less
+less
+less
+not less
+not less
+less
+less
+less
+not less
+not less
+less
+less
+not less
+less
+not less
+less
+not less
+less
+not less
+less
+less
+less
+less
+not less
+not less
+not less
+not less
+not less
