@@ -69,9 +69,14 @@ class segment {
     bottom = new point;
   }
 public:
-  explicit segment() = default;
-  explicit segment(point *start) : top(start), bottom(start), tan(+0.f), is_ray(true) {} // simple ray constructor
+  static int id_id;
+  int id;
+  explicit segment() { id = id_id++; };
+  explicit segment(point *start) : top(start), bottom(start), tan(+0.f), is_ray(true) {
+    id = id_id++;
+  }
   segment(point *start, point *end) {
+    id = id_id++;
     if(start->y > end->y) {
       top = start; bottom = end;
     } else {
@@ -127,7 +132,10 @@ public:
   bool operator<(const segment &other) const {
     if(other.is_ray) {
       if(is_ray) {
-        if(other.top->x == top->x) return top->y > other.top->y;
+        if(other.top->x == top->x) {
+          if(top->y == other.top->y) return id < other.id;
+          return top->y > other.top->y;
+        }
         return top->x < other.top->x;
       }
       if(other.top->x < std::min(top->x, bottom->x)) return false;
@@ -170,6 +178,8 @@ public:
   }
 };
 
+int segment::id_id = 0;
+
 std::istream &operator>>(std::istream &in, segment &out_segment) {
   point one, two;
   in >> one >> two;
@@ -196,15 +206,16 @@ public:
   bool is_own_point;
 
   bool operator<(const event &other) {
-    if(other.where->y > where->y) return false;
-    if(other.where->y < where->y) return true;
-    if(other.t == type::end && t == type::begin) return false;
-    if(other.t == type::begin && t == type::end) return true;
-    if(where->x == other.where->x) {
-      if(who->is_ray == other.who->is_ray) return who->top > other.who->top;
-      return !who->is_ray;
+    if(other.where->y == where->y) {
+      if(other.t == type::end && t == type::begin) return false;
+      if(other.t == type::begin && t == type::end) return true;
+      if(where->x == other.where->x) {
+        if(who->top->y == other.who->top->y) return who->id < other.who->id;
+        return who->top->y > other.who->top->y;
+      }
+      return where->x < other.where->x;
     }
-    return where->x < other.where->x;
+    return where->y > other.where->y;
   }
 
   bool operator==(const event & other) {
@@ -299,6 +310,7 @@ public:
         if(place_it != segments.begin() && next(place_it) != segments.end()) {
           segment *bigger = *next(place_it);
           segment *smaller = *prev(place_it);
+          ASSERT(*smaller < *bigger);
           if(bigger->intersects(smaller))
             register_intersection(bigger, smaller);
         }
@@ -323,6 +335,13 @@ public:
             if(smaller->intersects(e->who))
               register_intersection(smaller, e->who);
           }
+#ifdef ALGO_DEBUG
+          if(inserted.first != segments.begin() && next(inserted.first) != segments.end()) {
+            segment *smaller = *prev(inserted.first);
+            segment *bigger = *next(inserted.first);
+            ASSERT(*smaller < *bigger);
+          }
+#endif
         } else {
           std::set<segment*>::iterator place_it = segments.find(e->who);
           ASSERT(place_it != segments.end());
@@ -330,6 +349,7 @@ public:
           if(place_it != segments.begin() && next(place_it) != segments.end()) {
             segment *bigger = *next(place_it);
             segment *smaller = *prev(place_it);
+            ASSERT(*smaller < *bigger);
             if(bigger->intersects(smaller))
               register_intersection(bigger, smaller);
           }
