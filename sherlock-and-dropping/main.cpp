@@ -72,7 +72,7 @@ public:
   static int id_id;
   int id;
   explicit segment() { id = id_id++; };
-  explicit segment(point *start) : top(start), bottom(start), tan(+0.f), is_ray(true) {
+  explicit segment(point *start) : top(start), bottom(start), is_ray(true) {
     id = id_id++;
   }
   segment(point *start, point *end) {
@@ -82,14 +82,12 @@ public:
     } else {
       bottom = start; top = end;
     }
-    update_tan();
   }
   void set_points(point start) {
     create_points();
     *top = start;
     *bottom = start;
     is_ray = true;
-    tan = +0.f;
   }
   void set_points(point start, point end) {
     create_points();
@@ -98,10 +96,6 @@ public:
     } else {
       *bottom = start; *top = end;
     }
-    update_tan();
-  }
-  void update_tan() {
-    tan = (top->x - bottom->x);
   }
   virtual ~segment() {
     if(is_own_points) {
@@ -110,7 +104,6 @@ public:
   }
   point *top, *bottom;
   double final_x;
-  double tan;
   bool is_ray = false;
 
   // ray created by segment
@@ -364,14 +357,6 @@ public:
 void segment_test() {
   int T;
   // tangents
-  std::cin >> T;
-  while(T--) {
-    segment testable;
-    std::cin >> testable;
-    if(testable.tan > +0.f) std::cout << "+1\n";
-    else if(testable.tan < -0.f) std::cout << "-1\n";
-    else std::cout << "0\n";
-  }
   std::cin >> T;
   while(T--) {
     segment testable;
