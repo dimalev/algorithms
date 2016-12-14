@@ -1,6 +1,9 @@
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.TreeMap;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class Solution {
   static Scanner in;
@@ -21,15 +24,19 @@ public class Solution {
     private long x;
     private long y;
     private Segment owner = null;
+    private long finalX;
 
     public Point() { x = 0; y = 0; }
-    public Point(long x, long y) { setX(x); setY(y); }
+    public Point(long x, long y) { setX(x); setY(y); setFinalX(x); }
 
     public long getX() { return x; }
     public void setX(long x) { this.x = x; }
 
     public long getY() { return y; }
     public void setY(long y) { this.y = y; }
+
+    public long getFinalX() { return finalX; }
+    public void setFinalX(long finalX) { this.finalX = finalX; }
 
     public Segment getOwner() { return owner; }
     public void setOwner(Segment owner) { this.owner = owner; }
@@ -43,15 +50,29 @@ public class Solution {
     }
   }
 
-  static int pointXComparator(Point left, Point right) {
-    if(left.getX() == right.getX()) return 0;
+  static int pointXAscComparator(Point left, Point right) {
+    if(left.getX() == right.getX()) {
+      if(left.getY() == right.getY()) return 0;
+      return left.getY() > right.getY() ? -1 : 1;
+    }
     return left.getX() < right.getX() ? -1 : 1;
   }
 
+  static int pointYAscComparator(Point left, Point right) {
+    if(left.getY() == right.getY()) {
+      if(left.getX() == right.getX()) return 0;
+      return left.getX() < right.getX() ? -1 : 1;
+    }
+    return left.getY() < right.getY() ? -1 : 1;
+  }
+
+  static Point readPoint() {
+    int x = in.nextInt(), y = in.nextInt();
+    return new Point(x, y);
+  }
+
   static Segment readSegment() {
-    int x1 = in.nextInt(), y1 = in.nextInt(),
-      x2 = in.nextInt(), y2 = in.nextInt();
-    return new Segment(new Point(x1, y1), new Point(x2, y2));
+    return new Segment(readPoint(), readPoint());
   }
 
   static class Segment implements Comparable<Segment> {
@@ -67,6 +88,7 @@ public class Solution {
         left = two; right = one;
       }
 
+      left.setOwner(this); right.setOwner(this);
       finalX = getBottom().getX();
     }
 
@@ -96,38 +118,98 @@ public class Solution {
   }
 
   public static void main(String[] argv) {
-    try(in = new Scanner(System.in)) {
+    in = new Scanner(System.in);
 
-      if(argv.length > 0) {
-        if("units".equals(argv[0])) {
-          runUnits();
-          System.exit(0);
-        }
+    if(argv.length > 0) {
+      if("units".equals(argv[0])) {
+        runUnits();
+        System.exit(0);
       }
-
-      Solution one = new Solution();
-      one.solve();
     }
+
+    Solution one = new Solution();
+    one.solve();
+
+    in.close();
   }
 
   public Solution() {
+  }
+
+  protected void getFalls(TreeSet<Segment> lines, TreeSet<Point> balls, Map<Point, Segment> inRes) {
+    TreeSet<Point> ends = new TreeSet<Point>(Solution::pointXAscComparator);
+    TreeSet<Segment> currentSegments = new TreeSet<Segment>();
+    while(lines.size() > 0 || ends.size() > 0) {
+      // select event
+      boolean is_new = false;
+      Segment target = null;
+      if(lines.size() == 0) target = ends.pollFirst().getOwner();
+      else if(ends.size() == 0 || lines.first().getLeft().getX() < ends.first().getOwner().getRight().getX()) {
+        target = lines.pollFirst();
+        is_new = true;
+      } else {
+        target = ends.pollFirst().getOwner();
+      }
+      Point ruler = is_new ? target.getLeft() : target.getRight();
+      // process all balls up to event occurense
+      while(balls.size() > 0 && balls.first().getX() <= ruler.getX()) {
+        Point ball = balls.pollFirst();
+        Segment fallOn = currentSegments.higher(new Segment(ball, ball));
+        if(fallOn != null) {
+          System.out.format("register fall (%d %d) on (%d %d; %d %d)%n",
+                            ball.getX(), ball.getY(),
+                            fallOn.getLeft().getX(), fallOn.getLeft().getY(),
+                            fallOn.getRight().getX(), fallOn.getRight().getY());
+          if(inRes != null) inRes.put(ball, fallOn);
+          ball.setFinalX(fallOn.getFinalX());
+        }
+      }
+      // execute event
+      if(is_new) {
+        currentSegments.add(target);
+        System.out.format("add %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
+                           target.getRight().getX(), target.getRight().getY());
+        ends.add(target.getRight());
+      }
+      else {
+        currentSegments.remove(target);
+        System.out.format("remove %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
+                           target.getRight().getX(), target.getRight().getY());
+      }
+    }
   }
 
   public void solve() {
     int linesCount = in.nextInt(),
       ballsCount = in.nextInt();
 
-    TreeSet<Segment> lines;
-    TreeSet<Point> lineEnds(Solution::pointXComparator);
+    ArrayList<Segment> lines = new ArrayList<Segment>();
+    TreeSet<Point> lineEnds = new TreeSet<Point>(Solution::pointXAscComparator);
     for(int i = 0; i < linesCount; ++i) {
       Segment another = readSegment();
-      lines.put(another);
+      lines.add(another);
       Point bottom = another.getBottom();
-      bottom.setOwner(another);
-      lineEnds.put(bottom);
+      lineEnds.add(bottom);
     }
 
-    Map<Point, Segment> falls = getFalls(lines, lineEnds);
+    TreeMap<Point, Segment> falls = new TreeMap<Point, Segment>(Solution::pointYAscComparator);
+    getFalls(new TreeSet<Segment>(lines), lineEnds, falls);
+
+    for(Map.Entry<Point, Segment> fall : falls.entrySet())
+      fall.getKey().getOwner().setFinalX(fall.getValue().getFinalX());
+
+    System.out.println("-- Processing balls");
+
+    ArrayList<Point> balls = new ArrayList<Point>();
+    for(int i = 0; i < ballsCount; ++i)
+      balls.add(readPoint());
+
+    TreeSet<Point> sortedBalls = new TreeSet<Point>(Solution::pointXAscComparator);
+    sortedBalls.addAll(balls);
+    getFalls(new TreeSet<Segment>(lines), sortedBalls, null);
+
+    for(Point ball : balls)
+      System.out.println(ball.getFinalX());
   }
 
   static interface TestCase {
