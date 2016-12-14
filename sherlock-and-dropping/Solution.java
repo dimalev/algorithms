@@ -50,6 +50,14 @@ public class Solution {
     }
   }
 
+  static int segmentLeftXAscComparator(Segment left, Segment right) {
+    if(left.getLeft().getX() == right.getLeft().getX()) {
+      if(left.getLeft().getY() == right.getLeft().getY()) return 0;
+      return left.getLeft().getY() > right.getLeft().getY() ? -1 : 1;
+    }
+    return left.getLeft().getX() < right.getLeft().getX() ? -1 : 1;
+  }
+
   static int pointXAscComparator(Point left, Point right) {
     if(left.getX() == right.getX()) {
       if(left.getY() == right.getY()) return 0;
@@ -133,26 +141,27 @@ public class Solution {
     in.close();
   }
 
-  public Solution() {
-  }
+  public Solution() {}
 
   protected void getFalls(TreeSet<Segment> lines, TreeSet<Point> balls, Map<Point, Segment> inRes) {
     TreeSet<Point> ends = new TreeSet<Point>(Solution::pointXAscComparator);
     TreeSet<Segment> currentSegments = new TreeSet<Segment>();
     while(lines.size() > 0 || ends.size() > 0) {
-      // select event
-      boolean is_new = false;
-      Segment target = null;
-      if(lines.size() == 0) target = ends.pollFirst().getOwner();
-      else if(ends.size() == 0 || lines.first().getLeft().getX() < ends.first().getOwner().getRight().getX()) {
-        target = lines.pollFirst();
-        is_new = true;
-      } else {
-        target = ends.pollFirst().getOwner();
+      // select next X
+      long X;
+      if(lines.size() == 0) X = ends.first().getOwner().getRight().getX();
+      else if(ends.size() == 0) X = lines.first().getLeft().getX();
+      else X = Math.min(ends.first().getOwner().getRight().getX(), lines.first().getLeft().getX());
+      // add all lines starting <= X
+      while(lines.size() > 0 && lines.first().getLeft().getX() <= X) {
+        Segment target = lines.pollFirst();
+        currentSegments.add(target);
+        System.out.format("add %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
+                           target.getRight().getX(), target.getRight().getY());
+        ends.add(target.getRight());
       }
-      Point ruler = is_new ? target.getLeft() : target.getRight();
-      // process all balls up to event occurense
-      while(balls.size() > 0 && balls.first().getX() <= ruler.getX()) {
+      // process all balls <= X
+      while(balls.size() > 0 && balls.first().getX() <= X) {
         Point ball = balls.pollFirst();
         Segment fallOn = currentSegments.higher(new Segment(ball, ball));
         if(fallOn != null) {
@@ -164,14 +173,9 @@ public class Solution {
           ball.setFinalX(fallOn.getFinalX());
         }
       }
-      // execute event
-      if(is_new) {
-        currentSegments.add(target);
-        System.out.format("add %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
-                           target.getRight().getX(), target.getRight().getY());
-        ends.add(target.getRight());
-      }
-      else {
+      // remove all lines ending in <= X
+      while(ends.size() > 0 && ends.first().getX() <= X) {
+        Segment target = ends.pollFirst().getOwner();
         currentSegments.remove(target);
         System.out.format("remove %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
                            target.getRight().getX(), target.getRight().getY());
@@ -189,11 +193,13 @@ public class Solution {
       Segment another = readSegment();
       lines.add(another);
       Point bottom = another.getBottom();
-      lineEnds.add(bottom);
+      lineEnds.add(new Point(bottom.getX(), bottom.getY()));
     }
 
     TreeMap<Point, Segment> falls = new TreeMap<Point, Segment>(Solution::pointYAscComparator);
-    getFalls(new TreeSet<Segment>(lines), lineEnds, falls);
+    TreeSet<Segment> linesSet = new TreeSet<Segment>(Solution::segmentLeftXAscComparator);
+    linesSet.addAll(lines);
+    getFalls(linesSet, lineEnds, falls);
 
     for(Map.Entry<Point, Segment> fall : falls.entrySet())
       fall.getKey().getOwner().setFinalX(fall.getValue().getFinalX());
@@ -206,7 +212,9 @@ public class Solution {
 
     TreeSet<Point> sortedBalls = new TreeSet<Point>(Solution::pointXAscComparator);
     sortedBalls.addAll(balls);
-    getFalls(new TreeSet<Segment>(lines), sortedBalls, null);
+    linesSet.clear();
+    linesSet.addAll(lines);
+    getFalls(linesSet, sortedBalls, null);
 
     for(Point ball : balls)
       System.out.println(ball.getFinalX());
