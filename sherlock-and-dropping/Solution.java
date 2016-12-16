@@ -7,6 +7,7 @@ import java.util.Map;
 
 public class Solution {
   static Scanner in;
+  static boolean isDebug = false;
 
   static boolean isCW(Point pivot, Point from, Point to) {
     Point normalFrom = from.minus(pivot);
@@ -119,6 +120,11 @@ public class Solution {
     @Override
     public int compareTo(Segment other) {
       if(equals(other)) return 0;
+      if(other.getLeft().equals(other.getRight())) {
+        return isCW(left, right, other.left) ? -1 : 1;
+      } else if(getLeft().equals(getRight())) {
+        return isCW(other.left, other.right, left) ? 1 : -1;
+      }
       if(left.getX() < other.left.getX())
         return isCW(left, right, other.left) ? -1 : 1;
       return isCCW(other.left, other.right, left) ? -1 : 1;
@@ -133,6 +139,7 @@ public class Solution {
         runUnits();
         System.exit(0);
       }
+      if("debug".equals(argv[0])) isDebug = true;
     }
 
     Solution one = new Solution();
@@ -152,23 +159,41 @@ public class Solution {
       if(lines.size() == 0) X = ends.first().getOwner().getRight().getX();
       else if(ends.size() == 0) X = lines.first().getLeft().getX();
       else X = Math.min(ends.first().getOwner().getRight().getX(), lines.first().getLeft().getX());
+      // process all balls < X
+      while(balls.size() > 0 && balls.first().getX() < X) {
+        Point ball = balls.pollFirst();
+        Segment fallOn = currentSegments.higher(new Segment(new Point(ball.getX(), ball.getY()), new Point(ball.getX(), ball.getY())));
+        if(fallOn != null) {
+          if(isDebug)
+            System.out.format("register fall (%d %d) on (%d %d; %d %d) with final %d%n",
+                              ball.getX(), ball.getY(),
+                              fallOn.getLeft().getX(), fallOn.getLeft().getY(),
+                              fallOn.getRight().getX(), fallOn.getRight().getY(),
+                              fallOn.getFinalX());
+          if(inRes != null) inRes.put(ball, fallOn);
+          ball.setFinalX(fallOn.getFinalX());
+        }
+      }
       // add all lines starting <= X
       while(lines.size() > 0 && lines.first().getLeft().getX() <= X) {
         Segment target = lines.pollFirst();
         currentSegments.add(target);
-        System.out.format("add %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
-                           target.getRight().getX(), target.getRight().getY());
+        if(isDebug)
+          System.out.format("add %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
+                            target.getRight().getX(), target.getRight().getY());
         ends.add(target.getRight());
       }
-      // process all balls <= X
+      // process all balls == X
       while(balls.size() > 0 && balls.first().getX() <= X) {
         Point ball = balls.pollFirst();
-        Segment fallOn = currentSegments.higher(new Segment(ball, ball));
+        Segment fallOn = currentSegments.higher(new Segment(new Point(ball.getX(), ball.getY()), new Point(ball.getX(), ball.getY())));
         if(fallOn != null) {
-          System.out.format("register fall (%d %d) on (%d %d; %d %d)%n",
-                            ball.getX(), ball.getY(),
-                            fallOn.getLeft().getX(), fallOn.getLeft().getY(),
-                            fallOn.getRight().getX(), fallOn.getRight().getY());
+          if(isDebug)
+            System.out.format("register fall (%d %d) on (%d %d; %d %d) with final %d%n",
+                              ball.getX(), ball.getY(),
+                              fallOn.getLeft().getX(), fallOn.getLeft().getY(),
+                              fallOn.getRight().getX(), fallOn.getRight().getY(),
+                              fallOn.getFinalX());
           if(inRes != null) inRes.put(ball, fallOn);
           ball.setFinalX(fallOn.getFinalX());
         }
@@ -177,8 +202,53 @@ public class Solution {
       while(ends.size() > 0 && ends.first().getX() <= X) {
         Segment target = ends.pollFirst().getOwner();
         currentSegments.remove(target);
-        System.out.format("remove %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
-                           target.getRight().getX(), target.getRight().getY());
+        if(isDebug)
+          System.out.format("remove %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
+                            target.getRight().getX(), target.getRight().getY());
+      }
+    }
+  }
+
+  protected void getFalls2(TreeSet<Segment> lines, TreeSet<Point> balls, Map<Point, Segment> inRes) {
+    TreeSet<Point> ends = new TreeSet<Point>(Solution::pointXAscComparator);
+    TreeSet<Segment> currentSegments = new TreeSet<Segment>();
+    while(lines.size() > 0 || ends.size() > 0) {
+      // select next X
+      long X;
+      if(lines.size() == 0) X = ends.first().getOwner().getRight().getX();
+      else if(ends.size() == 0) X = lines.first().getLeft().getX();
+      else X = Math.min(ends.first().getOwner().getRight().getX(), lines.first().getLeft().getX());
+      // process all balls <= X
+      while(balls.size() > 0 && balls.first().getX() <= X) {
+        Point ball = balls.pollFirst();
+        Segment fallOn = currentSegments.higher(new Segment(new Point(ball.getX(), ball.getY()), new Point(ball.getX(), ball.getY())));
+        if(fallOn != null) {
+          if(isDebug)
+            System.out.format("register fall (%d %d) on (%d %d; %d %d) with final %d%n",
+                              ball.getX(), ball.getY(),
+                              fallOn.getLeft().getX(), fallOn.getLeft().getY(),
+                              fallOn.getRight().getX(), fallOn.getRight().getY(),
+                              fallOn.getFinalX());
+          if(inRes != null) inRes.put(ball, fallOn);
+          ball.setFinalX(fallOn.getFinalX());
+        }
+      }
+      // add all lines starting <= X
+      while(lines.size() > 0 && lines.first().getLeft().getX() <= X) {
+        Segment target = lines.pollFirst();
+        currentSegments.add(target);
+        if(isDebug)
+          System.out.format("add %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
+                            target.getRight().getX(), target.getRight().getY());
+        ends.add(target.getRight());
+      }
+      // remove all lines ending in <= X
+      while(ends.size() > 0 && ends.first().getX() <= X) {
+        Segment target = ends.pollFirst().getOwner();
+        currentSegments.remove(target);
+        if(isDebug)
+          System.out.format("remove %d %d %d %d%n", target.getLeft().getX(), target.getLeft().getY(),
+                            target.getRight().getX(), target.getRight().getY());
       }
     }
   }
@@ -193,18 +263,29 @@ public class Solution {
       Segment another = readSegment();
       lines.add(another);
       Point bottom = another.getBottom();
-      lineEnds.add(new Point(bottom.getX(), bottom.getY()));
+      Point fakeBall = new Point(bottom.getX(), bottom.getY());
+      fakeBall.setOwner(another);
+      lineEnds.add(fakeBall);
     }
 
     TreeMap<Point, Segment> falls = new TreeMap<Point, Segment>(Solution::pointYAscComparator);
     TreeSet<Segment> linesSet = new TreeSet<Segment>(Solution::segmentLeftXAscComparator);
     linesSet.addAll(lines);
-    getFalls(linesSet, lineEnds, falls);
+    getFalls2(linesSet, lineEnds, falls);
 
-    for(Map.Entry<Point, Segment> fall : falls.entrySet())
-      fall.getKey().getOwner().setFinalX(fall.getValue().getFinalX());
+    if(isDebug) System.out.println("-- Processing segment tree");
+    for(Map.Entry<Point, Segment> fall : falls.entrySet()) {
+      Segment from = fall.getKey().getOwner();
+      Segment to = fall.getValue();
+      if(isDebug)
+        System.out.format("link (%d %d; %d %d) to fall on (%d %d; %d %d) and final X = %d%n",
+                          from.getLeft().getX(), from.getLeft().getY(), from.getRight().getX(), from.getRight().getY(),
+                          to.getLeft().getX(), to.getLeft().getY(), to.getRight().getX(), to.getRight().getY(),
+                          to.getFinalX());
+      from.setFinalX(to.getFinalX());
+    }
 
-    System.out.println("-- Processing balls");
+    if(isDebug) System.out.println("-- Processing balls");
 
     ArrayList<Point> balls = new ArrayList<Point>();
     for(int i = 0; i < ballsCount; ++i)
