@@ -18,20 +18,23 @@ constexpr int MAX_N = 10;
 
 unsigned int N;
 
+std::array<bool, MAX_N> winners{false};
+unsigned int winners_count = 0;
+
 std::array<std::array<double, MAX_N>, MAX_N> p;
 
-double count(const std::set<unsigned int> &winners) {
-  if(winners.size() == N - 1) return 1.0;
+double count() {
+  if(winners_count == N - 1) return 1.0;
   double total = 0.0;
   for(unsigned int i = 0; i < N; ++i) {
-    if(winners.find(i) != winners.end()) continue;
+    if(winners[i]) continue;
     double win_rate = 1.0;
     for(unsigned int j = 0; j < N; ++j)
-      if(i != j && winners.find(j) == winners.end())
+      if(i != j && !winners[j])
         win_rate *= p[i][j];
-    std::set<unsigned int> new_winners{winners};
-    new_winners.emplace(i);
-    total += win_rate * count(new_winners);
+    winners[i] = true; ++winners_count;
+    total += win_rate * count();
+    winners[i] = false; --winners_count;
   }
   return total;
 }
@@ -45,6 +48,6 @@ int main() {
   for(unsigned int i = 0; i < N; ++i)
     for(unsigned int j = 0; j < N; ++j)
       std::cin >> p[i][j];
-  std::cout << std::fixed << std::setprecision(15) << count({});
+  std::cout << std::fixed << std::setprecision(15) << count();
   return 0;
 }
