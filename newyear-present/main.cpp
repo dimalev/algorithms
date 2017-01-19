@@ -1,6 +1,9 @@
+#include <stdint.h>
+#include <cmath>
+#include <cstdio>
+#include <vector>
 #include <iostream>
 #include <algorithm>
-#include <vector>
 #include <map>
 
 #ifdef ALGO_DEBUG
@@ -14,10 +17,121 @@
 
 #endif
 
-int C(int N, nint k) {
-  long long res = 1;
-  for(long long i = N - k + 1; i <= N; ++i) res *= i;
-  for(long long i = 1; i <= k; ++i) res /= i;
+int64_t N;
+std::map<int64_t, int64_t> L;
+
+int64_t C(const int64_t &n, const int64_t &k) {
+  int64_t res = 1;
+  for(int64_t i = n - k + 1; i <= n; ++i) res *= i;
+  for(int64_t i = 2; i <= k; ++i) res /= i;
+  return res;
+}
+
+int64_t count_two(const int64_t &l) {
+  //std::cout << "-- " << l << " for two:\n";
+
+  std::vector<std::pair<std::map<const int64_t, int64_t>::iterator, std::map<const int64_t, int64_t>::iterator>> L2;
+  std::map<int64_t, int64_t>::iterator lines = L.begin();
+  long long all_combs = 0;
+  while(lines != L.end()) {
+    if(2 * lines->first >= l) break;
+    std::map<int64_t, int64_t>::iterator lines2 = L.find(l - lines->first);
+    if(lines2 != L.end())  {
+      L2.push_back(std::pair<std::map<int64_t, int64_t>::iterator, std::map<int64_t, int64_t>::iterator>(lines, lines2));
+      all_combs += lines->second * lines2->second;
+    }
+    ++lines;
+  }
+
+  int64_t res = 0;
+  if(l % 2 == 0) {
+    int64_t l2 = l / 2;
+    auto l2it = L.find(l2);
+    if(l2it != L.end()) {
+      // all four segments are equal
+      if(l2it->second >= 4) {
+        int64_t comb = C(l2it->second, 4);
+        //std::cout << comb << " for all 4 segments equal (" << l2it->second << ")\n";
+        res += comb;
+      } //else std::cout << "cannot have all 4 segments equal\n";
+      // two are equal, two more - are different
+      if(l2it->second >= 2) {
+        res += all_combs * C(l2it->second, 2);
+      } //else std::cout << "cannot have one line of 2 equal segments\n";
+    }
+  } //else std::cout << "cannot have 2 equal\n";
+  // we iterate over shorter stick
+  auto lines_pair_it = L2.begin();
+  while(lines_pair_it != L2.end()) {
+    lines = lines_pair_it->first;
+    // two sticks are equal - third is equal too
+    auto lines2 = lines_pair_it->second;
+    if(lines->second >= 2 && lines2->second >= 2) {
+      int64_t comb = C(lines->second, 2) * C(lines2->second, 2);
+      //std::cout << "for 2x" << lines->first << " and 2x" << lines2->first << " " << comb << " combinations\n";
+      res += comb;
+    }
+    auto lines_pair_it2 = lines_pair_it;
+    ++lines_pair_it2;
+    while(lines_pair_it2 != L2.end()) {
+      auto lines3 = lines_pair_it2->first;
+      auto lines32 = lines_pair_it2->second;
+      int64_t comb = lines->second * lines2->second * lines3->second * lines32->second;
+      //std::cout << "for " << lines->first << " + " << lines2->first << " and " << lines3->first << " + " << lines32->first << " threre are " << comb << " combinations\n";
+      res += comb;
+      ++lines_pair_it2;
+    }
+    ++lines_pair_it;
+  }
+  return res;
+}
+
+std::map<int64_t, std::map<int64_t, int64_t>*> two_other;
+
+int64_t find_two_other(const int64_t &l2, const int64_t &lf) {
+  int64_t res = 0;
+  auto lines2 = L.upper_bound(l2 - lf);
+  while(lines2 != L.end()) {
+    if(2 * lines2->first >= l2) break;
+    auto third = L.find(l2 - lines2->first);
+    if(third != L.end()) {
+      int64_t comb = third->second * lines2->second;
+      //std::cout << comb << " for " << lines.first << " " << lines2->first << " " << third->first << "\n";
+      res += comb;
+    } //else std::cout << "no third for " << lines.first << " " << lines2->first << "\n";
+    ++lines2;
+  }
+  return res;
+}
+
+int64_t count_three(const int64_t &l) {
+  //std::cout << "-- " << l << " for three:\n";
+  int64_t res = 0;
+  // all three equal
+  if(l % 3 == 0) {
+    auto l3it = L.find(l / 3);
+    if(l3it != L.end() && l3it->second >= 3) {
+      int64_t comb = C(l3it->second, 3);
+      //std::cout << comb << " of 3 equal\n";
+      res += comb;
+    } //else std::cout << "No 3 equal\n";
+  }
+  for(auto lines : L) {
+    if(lines.first >= l) break;
+    // two equal
+    if(2 * lines.first < l && 3 * lines.first != l && lines.second >= 2) {
+      auto third = L.find(l - 2 * lines.first);
+      if(third != L.end()) {
+        int64_t comb = third->second * C(lines.second, 2);
+        //std::cout << comb << " for 2 equal: 2x" << lines.first << " and " << third->first << "\n";
+        res += comb;
+      } //else std::cout << "no third for two equal " << lines.first << "\n";
+    } //else std::cout << "no 2 equal for " << lines.first << "\n";
+    // three different
+    int64_t l2 = l - lines.first;
+    // we asume lines - is largest, lines2 - smallest, and third is in between
+    res += find_two_other(l2, lines.first) * lines.second;
+  }
   return res;
 }
 
@@ -25,64 +139,29 @@ void unit_tests() {
 }
 
 int main() {
-  UNIT_TESTS();
-  int N;
-  std::map<int, int> L;
+  UNIT_TESTS()
   std::cin >> N;
-  for(int i = 0; i < N; ++i) {
-    int l;
+  for(int64_t i = 0; i < N; ++i) {
+    int64_t l;
     std::cin >> l;
-    std::pair<std::map<int, int>::iterator, bool> place = L.emplace(l, 0);
-    place.first->second++;
+    auto line = L.find(l);
+    if(line == L.end()) {
+      L.emplace(l, 1);
+    } else ++line->second;
   }
-  long count = 0;
-  auto longest = L.rbegin();
-  while(longest != L.rend()) {
-    ++longest;
-    int l = longest->first;
-    int lc = longest->second;
-    if(lc >= 2) {
-      auto left = L.begin();
-      auto right = prev(L.find(l));
-      std::vector<int> variations;
-      int clc2 = C(lc, 2);
-      while(left != right) {
-        int m = right->first;
-        int mc = right->second;
-        int s = left->first;
-        int sc = left->second;
-        if(m + s > l) --right;
-        else if(m + s < l) ++left;
-        else {
-          variations.push_back(mc * sc);
-          if(mc >= 2 && sc >= 2) count += C(mc, 2) * C(sc, 2) * clc2;
-          --right;
-          if(right == left) break;
-          ++left;
-        }
-      }
-      if(2 * right->first == l && right->second >= 2) {
-        variations.push_back(C(right->second, 2));
-        if(right->second >= 4)
-          count += clc2 * C(right->second, 4);
-      }
-      int sum = 0;
-      for(int v : variations) sum += v;
-      for(int v : variations) {
-        sum -= v;
-        count += clc2 * v * sum;
-      }
-      if(lc >= 3) {
-        int clc3 = C(lc, 3);
-        auto small_it = L.begin();
-        int l3 = l / 3;
-        while(small_it->first <= l3) {
-          if(3 * small_it->first == l && small_it->second >= 3)
-            count += clc3 * C(small_it->second, 3);
-          
-        }
-      }
+  int64_t res = 0;
+  for(auto lines : L) {
+    if(lines.second == 2) {
+      res += count_two(lines.first);
+    } else if(lines.second >= 3) {
+      int64_t comb = C(lines.second, 2) * count_two(lines.first);
+      //std::cout << "for " << lines.first << " (" << lines.second << ") with 2x2 got " << comb << " combinations\n";
+      res += comb;
+      comb = C(lines.second, 3) * count_three(lines.first);
+      //std::cout << "for " << lines.first << " (" << lines.second << ") with 1x3 got " << comb << " combinations\n";
+      res += comb;
     }
   }
+  std::cout << res;
   return 0;
 }
