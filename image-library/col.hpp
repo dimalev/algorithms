@@ -6,7 +6,7 @@
 
 namespace image_library {
 
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   class Col {
   public:
     using cel_t = std::array<T, D>;

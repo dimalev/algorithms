@@ -7,7 +7,7 @@
 
 namespace image_library {
 
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   class Image {
     std::vector<Col<T,D>> m_Cols;
     int m_Rows;

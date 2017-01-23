@@ -6,7 +6,7 @@
 
 namespace image_library {
 
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   Image<T, D> Scale(Image<T, D> &in_img, int factor) {
     int out_width = in_img.Width() / factor;
     if(in_img.Width() % factor != 0) out_width++;
@@ -22,7 +22,7 @@ namespace image_library {
     return out_img;
   }
 
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   Image<T, D> Transpose(const Image<T, D> &in_img) {
     Image<T, D> out_img{in_img.Height(), in_img.Width()};
     for(int i = 0; i < in_img.Width(); ++i) {

@@ -103,6 +103,17 @@ START_TEST(test_scale)
   ASSERT(scaled[1][0] == 6, "Right half of rectangle");
 END_TEST
 
+START_TEST(test_scale_partial)
+  std::string input{"1 3 10\n3 1 2"};
+  image_library::Image<int, 1> image{3, 2};
+  image_library::ImageFromString(input, &image);
+  image_library::Image<int, 1> scaled = image_library::Scale(image, 2);
+  ASSERT(scaled.Width() == 2, "Width must be halved");
+  ASSERT(scaled.Height() == 1, "Height must be halved");
+  ASSERT(scaled[0][0] == 2, "Left half of rectangle");
+  ASSERT(scaled[1][0] == 3, "Right half of rectangle polyfilled with two zeros");
+END_TEST
+
 START_TEST(test_image_copy)
   std::string input{"1,2 3,4 5,6 6,6\n3,1 1,3 1,5 12,2"};
   image_library::Image<int, 2> source_image{4, 2};
@@ -122,6 +133,7 @@ int main() {
     test_col_float_io();
     test_col_avarage();
     test_scale();
+    test_scale_partial();
     test_image_copy();
   } catch(TestError& te) {
     std::cerr << "Test [" << current_test_name << "] failed " << te.reason() << std::endl;

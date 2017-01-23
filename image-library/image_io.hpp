@@ -23,7 +23,7 @@ namespace image_library {
    * OUTPUT
    */
 
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   std::string ToDebugString(const Col<T, D> &in_col) {
     std::stringstream line;
     line << std::setprecision(4);
@@ -49,7 +49,7 @@ namespace image_library {
     return line.str();
   }
 
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   std::string ToDebugString(const Image<T, D> &in_img) {
     Image<T, D> in_img_transposed = Transpose(in_img);
     std::stringstream cols;
@@ -66,7 +66,7 @@ namespace image_library {
 
   constexpr int line_buffer_size = 1024;
   constexpr int number_buffer_size = 32;
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   void ColFromString(const std::string &in_data, Col<T, D> *out_col) {
     std::stringstream buffer(in_data);
     char line_buffer[line_buffer_size];
@@ -89,7 +89,7 @@ namespace image_library {
   }
 
   constexpr int row_buffer_size = 1024;
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   void ImageFromString(const std::string &in_data, Image<T, D> *out_img) {
     Image<T, D> out_image_transposed{out_img->Height(), out_img->Width()};
     std::stringstream buffer(in_data);

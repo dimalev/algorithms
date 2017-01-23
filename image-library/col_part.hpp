@@ -7,7 +7,7 @@
 
 namespace image_library {
 
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   class ColPart {
   protected:
     Col<T, D> *m_target;
@@ -50,21 +50,21 @@ namespace image_library {
     int Size() const { return m_size; }
   };
 
-  template<typename T, unsigned int D>
+  template<typename T, std::size_t D>
   void operator+=(std::array<T, D>& left, const std::array<T, D>& right) {
     for(int i = 0; i < D; ++i) {
       left[i] += right[i];
     }
   }
 
-  template<typename T, unsigned int D>
+  template<typename T, std::size_t D>
   void operator/=(std::array<T, D>& left, const int& divider) {
     for(int i = 0; i < D; ++i) {
       left[i] /= divider;
     }
   }
 
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   typename Col<T, D>::cel_t ColAvarage(const ColPart<T, D> &in_part) {
     typename Col<T, D>::cel_t aggregator{0};
     for(int i = 0; i < in_part.Size(); ++i) {

@@ -8,7 +8,7 @@
 
 namespace image_library {
 
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   class ImagePart {
     Image<T, D> *m_target;
     int m_start_col, m_start_row, m_cols, m_rows;
@@ -30,7 +30,7 @@ namespace image_library {
     }
   };
 
-  template<typename T, int D>
+  template<typename T, std::size_t D>
   typename Col<T, D>::cel_t ImagePartAvarage(const ImagePart<T, D> &in_img) {
     typename Col<T, D>::cel_t aggregator{0};
     for(int i = 0; i < in_img.Width(); ++i) {
