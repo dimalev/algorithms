@@ -31,11 +31,10 @@ bool search(const std::vector<int> &elements, int count, int sum, int limit) {
 
 int main() {
   UNIT_TESTS();
-  int k, sum, n, e;
+  int k, sum, e;
   std::cin >> k >> sum;
   std::vector<int> E;
   while(std::cin >> e) E.push_back(e);
-  n = E.size();
   search(E, k, sum, E.size());
   return 0;
 }
