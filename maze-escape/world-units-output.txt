@@ -1,0 +1,25 @@
+(OK) direction summ
+RIGHT
+UP
+UP
+LEFT
+(OK) direction diff
+LEFT
+RIGHT
+DOWN
+UP
+(OK) world pieces
+1 5
+4 0
+###
+#--
+#--
+#e#
+---
+---
+---
+---
+-#-
+#--
+---
+---

@@ -1,3 +1,7 @@
+/*
+  Functions used for printf-debug style. See main.cpp for dummies.
+ */
+
 #define ASSERT(expr) \
   if(expr) { } \
   else { \
@@ -10,9 +14,3 @@
 
 #define TRACE_LINE(message) \
   std::cerr << message << std::endl;
-
-#ifdef UNITS
-#define UNIT_TESTS() unit_tests(); return 0;
-#else
-#define UNIT_TESTS()
-#endif

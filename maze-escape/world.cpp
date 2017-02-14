@@ -1,15 +1,158 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <memory>
+#include <sstream>
+
+#ifdef UNITS
+#include "../test/units.cpp"
+#endif
+
+struct Vector {
+  union {
+    int y;
+    int r;
+  };
+  union {
+    int x;
+    int c;
+  };
+};
+
+enum Direction {
+  UP, RIGHT, DOWN, LEFT, NONE
+};
+
+std::string direction_names[] = {"UP", "RIGHT", "DOWN", "LEFT", "NONE"};
+
+std::string StringFromDirection(const Direction& inDirection) {
+  return direction_names[inDirection];
+}
+
+Direction DirectionFromString(const std::string& inStr) {
+  for(int i = 0; i < 5; ++i) {
+    if(direction_names[i] == inStr) return static_cast<Direction>(i);
+  }
+  return Direction::NONE;
+}
+
+Direction DirectionFromVector(const Vector& inVector) {
+  if(inVector.x == 0 && inVector.y == -1) return Direction::UP;
+  if(inVector.x == +1 && inVector.y == 0) return Direction::RIGHT;
+  if(inVector.x == 0 && inVector.y == +1) return Direction::DOWN;
+  if(inVector.x == -1 && inVector.y == 0) return Direction::LEFT;
+  return Direction::NONE;
+}
+
+Vector VectorFromDirection(const Direction& inDirection) {
+  if(inDirection == Direction::UP) return {-1, 0};
+  if(inDirection == Direction::RIGHT) return {0, +1};
+  if(inDirection == Direction::DOWN) return {+1, 0};
+  if(inDirection == Direction::LEFT) return {0, -1};
+  return {0, 0};
+}
+
+Direction operator+(const Direction& left, const Direction& right) {
+  return static_cast<Direction>((static_cast<int>(left) + static_cast<int>(right)) % 4);
+}
+
+Direction operator-(const Direction& left, const Direction& right) {
+  return static_cast<Direction>((4 + static_cast<int>(left) - static_cast<int>(right)) % 4);
+}
+
+Vector operator+(const Vector& left, const Vector& right) {
+  return { left.r + right.r, left.c + right.c };
+}
+
+Vector operator-(const Vector& left, const Vector& right) {
+  return { left.r - right.r, left.c - right.c };
+}
+
+bool operator==(const Vector& left, const Vector& right) {
+  return left.r == right.r && left.c == right.c;
+}
+
+Vector operator*(const Vector& left, const int& mult) {
+  return { left.r * mult, left.c * mult };
+}
+
+class Maze {
+public:
+  enum Cell { FLOOR, EXIT, WALL };
+  const int rows, cols;
+  std::unique_ptr<Cell[]> cells;
+  Vector begin, exit;
+
+  Maze(int r, int c) : rows{r}, cols{c}, cells{new Cell[r * c]} {}
+
+  Cell& at(int r, int c) { return cells[r * cols + c]; }
+  const Cell& at(int r, int c) const { return cells[r * cols + c]; }
+  Cell& at(const Vector& pos) { return cells[pos.r * cols + pos.c]; }
+  const Cell& at(const Vector& pos) const { return cells[pos.r * cols + pos.c]; }
+};
+
+char cell_names[] = { '-', 'e', '#' };
+
+char CharFromCell(const Maze::Cell &inCell) {
+  return cell_names[static_cast<int>(inCell)];
+}
+
+Maze::Cell CellFromChar(const char& inChar) {
+  for(int i = 0; i < 3; ++i)
+    if(cell_names[i] == inChar) return static_cast<Maze::Cell>(i);
+  return Maze::Cell::FLOOR;
+}
+
+void readMaze(const char* maze_str, Maze* maze) {
+  std::stringstream maze_data{maze_str};
+  for(int r = 0; r < maze->rows; ++r) {
+    char buf[250];
+    maze_data.getline(buf, 250);
+    for(int c = 0; c < maze->cols; ++c) {
+      if(buf[c] == 'b') {
+        maze->at(r, c) = Maze::Cell::FLOOR;
+        maze->begin.r = r; maze->begin.c = c;
+      } else if(buf[c] == 'e') {
+        maze->at(r, c) = Maze::Cell::EXIT;
+        maze->exit.r = r; maze->exit.c = c;
+      } else maze->at(r, c) = CellFromChar(buf[c]);
+    }
+  }
+}
+
+void printMazePiece(const Maze& maze, const Vector &center, const Direction& dir) {
+  Vector unit_up = VectorFromDirection(dir);
+  Vector unit_right = VectorFromDirection(dir + Direction::RIGHT);
+  // std::cout << center.r << ", " << center.c << "; "
+  //           << unit_up.r << ", " << unit_up.c << "; "
+  //           << unit_right.r << ", " << unit_right.c << "\n";
+  for(int dr = +1; dr >= -1; --dr) {
+    for(int dc = -1; dc <= +1; ++dc) {
+      // Vector up = (unit_up * dr);
+      // Vector right = (unit_right * dc);
+      // Vector p = center + up + right;
+      // std::cout << p.r << ", " << p.c << "; " << up.r << ", " << up.c << "; " << right.r << ", " << right.c << "| ";
+      std::cout << CharFromCell(maze.at(center + unit_up * dr + unit_right * dc));
+    }
+    std::cout << '\n';
+  }
+}
 
 class World {
+  Maze* maze;
 public:
   bool is_finished = false;
   bool is_successful = false;
   bool is_failed = false;
   std::string failed_reason;
 
-  void init(std::string init_data) { }
+  void init(std::string init_data) {
+    std::stringstream init_stream{init_data};
+    int rs, cs;
+    init_stream >> rs >> cs;
+    maze = new Maze{rs, cs};
+    
+  }
   std::string prompt() { return "hello"; }
   void process(std::string input) {
     is_finished = true;
@@ -21,7 +164,7 @@ public:
 #ifndef PREVENT_WORLD_MAIN
 
 std::string read_input() {
-  return "hello";
+  
 }
 
 std::string read_file(char* file_name) {
@@ -34,7 +177,67 @@ std::string read_file(char* file_name) {
 
 void print_use(std::string executable);
 
+#ifdef UNITS
+void test_direction_summ() {
+  test_header("direction summ");
+  int T;
+  std::cin >> T;
+  for(int i = 0; i < T; ++i) {
+    std::string one, two;
+    std::cin >> one >> two;
+    Direction left = DirectionFromString(one);
+    Direction right = DirectionFromString(two);
+    std::cout << StringFromDirection(left + right) << "\n";
+  }
+}
+
+void test_direction_diff() {
+  test_header("direction diff");
+  int T;
+  std::cin >> T;
+  for(int i = 0; i < T; ++i) {
+    std::string one, two;
+    std::cin >> one >> two;
+    Direction left = DirectionFromString(one);
+    Direction right = DirectionFromString(two);
+    std::cout << StringFromDirection(left - right) << "\n";
+  }
+}
+
+void test_world_pieces() {
+  test_header("world pieces");
+  int rs, cs;
+  std::cin >> rs >> cs;
+  std::string empty;
+  std::getline(std::cin, empty);
+  char maze_c_str[rs * (cs + 1) + 1];
+  std::cin.get(maze_c_str, rs * (cs + 1), '\0');
+  Maze maze{rs, cs};
+  readMaze(maze_c_str, &maze);
+  std::cout << maze.begin.r << " " << maze.begin.c << "\n"
+            << maze.exit.r << " " << maze.exit.c << "\n";
+  int T;
+  std::cin >> T;
+  for(int t = 0; t < T; ++t) {
+    int r, c;
+    std::string dir_name;
+    std::cin >> r >> c >> dir_name;
+    printMazePiece(maze, {r, c}, DirectionFromString(dir_name));
+  }
+}
+
+void unit_tests() {
+  test_direction_summ();
+  test_direction_diff();
+  test_world_pieces();
+}
+#endif
+
 int main(int argc, char** argv) {
+#ifdef UNITS
+  unit_tests();
+  return 0;
+#endif
   if(argc != 2) {
     print_use(argv[0]);
     return 1;
