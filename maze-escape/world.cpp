@@ -151,7 +151,12 @@ public:
     int rs, cs;
     init_stream >> rs >> cs;
     maze = new Maze{rs, cs};
-    
+    std::string empty;
+    std::getline(init_stream, empty);
+    int maze_data_length = (cs + 1) * rs;
+    char maze_data[maze_data_length];
+    init_stream.get(maze_data, maze_data_length);
+    readMaze(maze_data, maze);
   }
   std::string prompt() { return "hello"; }
   void process(std::string input) {
@@ -164,7 +169,13 @@ public:
 #ifndef PREVENT_WORLD_MAIN
 
 std::string read_input() {
-  
+  std::string input;
+  for(int i = 0; i < 3; ++i) {
+    std::string line;
+    std::cin >> line;
+    input += line;
+  }
+  return input;
 }
 
 std::string read_file(char* file_name) {
