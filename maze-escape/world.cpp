@@ -120,27 +120,31 @@ void readMaze(const char* maze_str, Maze* maze) {
   }
 }
 
-void printMazePiece(const Maze& maze, const Vector &center, const Direction& dir) {
+std::string printMazePiece(const Maze& maze, const Vector &center, const Direction& dir) {
   Vector unit_up = VectorFromDirection(dir);
   Vector unit_right = VectorFromDirection(dir + Direction::RIGHT);
   // std::cout << center.r << ", " << center.c << "; "
   //           << unit_up.r << ", " << unit_up.c << "; "
   //           << unit_right.r << ", " << unit_right.c << "\n";
+  std::string out;
   for(int dr = +1; dr >= -1; --dr) {
     for(int dc = -1; dc <= +1; ++dc) {
       // Vector up = (unit_up * dr);
       // Vector right = (unit_right * dc);
       // Vector p = center + up + right;
       // std::cout << p.r << ", " << p.c << "; " << up.r << ", " << up.c << "; " << right.r << ", " << right.c << "| ";
-      std::cout << CharFromCell(maze.at(center + unit_up * dr + unit_right * dc));
+      out += CharFromCell(maze.at(center + unit_up * dr + unit_right * dc));
     }
-    std::cout << '\n';
+    out += "\n";
   }
+  return out;
 }
 
 class World {
-  Maze* maze;
 public:
+  Maze* maze;
+  Vector position;
+  Direction look;
   bool is_finished = false;
   bool is_successful = false;
   bool is_failed = false;
@@ -149,19 +153,50 @@ public:
   void init(std::string init_data) {
     std::stringstream init_stream{init_data};
     int rs, cs;
-    init_stream >> rs >> cs;
+    std::string look_name;
+    init_stream >> rs >> cs >> look_name;
+    look = DirectionFromString(look_name);
     maze = new Maze{rs, cs};
     std::string empty;
     std::getline(init_stream, empty);
     int maze_data_length = (cs + 1) * rs;
     char maze_data[maze_data_length];
-    init_stream.get(maze_data, maze_data_length);
+    init_stream.get(maze_data, maze_data_length, '\0');
     readMaze(maze_data, maze);
+    position = maze->begin;
   }
-  std::string prompt() { return "hello"; }
+
+  std::string prompt() {
+    if(is_finished) {
+      if(is_successful) return "Maze was finished successfuly!\n";
+      if(is_failed) return "Maze was failed!\n";
+      return "Maze was finished without proper success flag!\n";
+    }
+    return printMazePiece(*maze, position, look);
+  }
+
   void process(std::string input) {
-    is_finished = true;
-    is_successful = true;
+    if(is_finished) {
+      if(is_successful) {
+        is_successful = false;
+        is_failed = true;
+      }
+      return;
+    }
+    Direction input_direction = DirectionFromString(input);
+    Direction new_look_direction = look + input_direction;
+    Vector new_look_vector = VectorFromDirection(new_look_direction);
+    position = position + new_look_vector;
+    look = new_look_direction;
+    if(position == maze->exit) {
+      is_finished = true;
+      is_successful = true;
+      return;
+    }
+    if(maze->at(position) == Maze::Cell::WALL) {
+      is_finished = true;
+      is_failed = true;
+    }
   }
 
 };
@@ -169,13 +204,13 @@ public:
 #ifndef PREVENT_WORLD_MAIN
 
 std::string read_input() {
-  std::string input;
-  for(int i = 0; i < 3; ++i) {
-    std::string line;
+  std::string line;
+  // for(int i = 0; i < 3; ++i) {
+  //   std::string line;
     std::cin >> line;
-    input += line;
-  }
-  return input;
+  //   input += line;
+  // }
+  return line;
 }
 
 std::string read_file(char* file_name) {
@@ -233,7 +268,49 @@ void test_world_pieces() {
     int r, c;
     std::string dir_name;
     std::cin >> r >> c >> dir_name;
-    printMazePiece(maze, {r, c}, DirectionFromString(dir_name));
+    std::cout << printMazePiece(maze, {r, c}, DirectionFromString(dir_name));
+  }
+}
+
+void test_world_operations() {
+  test_header("world operations");
+  int T;
+  std::cin >> T;
+  while(T--) {
+    int init_lines_count;
+    std::cin >> init_lines_count;
+    std::string empty;
+    std::getline(std::cin, empty);
+    std::string init_data;
+    for(int i = 0; i < init_lines_count; ++i) {
+      std::string line;
+      std::getline(std::cin, line);
+      init_data += line + "\n";
+    }
+    World test_world;
+    test_world.init(init_data);
+    int step_count;
+    std::cin >> step_count;
+    for(int i = 0; i < step_count; i++) {
+      if(test_world.is_finished || test_world.is_failed) {
+        std::cout << "(FAILED) Premature finished and/or failed\n";
+        exit(0);
+      }
+      std::cout << test_world.prompt();
+      std::string step;
+      std::cin >> step;
+      test_world.process(step);
+    }
+    if(test_world.is_finished) {
+      if(test_world.is_successful) {
+        std::cout << "(OK)\n";
+      } else {
+        std::cout << "(FAILED)\n";
+      }
+    } else {
+      std::cout << "(FAILED) Not finished\n";
+      exit(0);
+    }
   }
 }
 
@@ -241,6 +318,7 @@ void unit_tests() {
   test_direction_summ();
   test_direction_diff();
   test_world_pieces();
+  test_world_operations();
 }
 #endif
 

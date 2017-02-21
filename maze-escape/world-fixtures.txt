@@ -24,3 +24,34 @@ e-----#
 4 1 LEFT
 4 3 DOWN
 4 2 RIGHT
+world operations
+2
+7
+6 6 LEFT
+######
+#-b--#
+###--#
+#-e#-#
+#----#
+######
+8
+DOWN
+RIGHT
+LEFT
+RIGHT
+UP
+RIGHT
+UP
+RIGHT
+7
+6 6 LEFT
+######
+#-b--#
+###--#
+#-e#-#
+#----#
+######
+3
+DOWN
+RIGHT
+UP
