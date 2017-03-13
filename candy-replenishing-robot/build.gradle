@@ -1,0 +1,31 @@
+apply plugin: 'java'
+
+compileJava {
+  source = "Solution.java"
+	destinationDir = file("target")
+}
+
+task testAll
+
+FileTree outputs = fileTree('.').include('output-*.txt')
+
+outputs.each { File outputFile ->
+  String outputFileName = relativePath(outputFile)
+  String inputFileName = outputFileName.replace('output', 'input')
+  String solutionFileName = outputFileName.replace('output', 'solution')
+
+  task "runTests-$outputFileName" (type: JavaExec, dependsOn: compileJava) {
+    classpath = project.files(["."])
+	  main = "Solution"
+	  standardInput = new FileInputStream(file(inputFileName))
+    standardOutput = new FileOutputStream(file(solutionFileName))
+  }
+
+  task "diff-$outputFileName" (type: Exec, dependsOn: "runTests-$outputFileName") {
+    executable "diff"
+    args '-w', solutionFileName, outputFileName
+  }
+
+  testAll.dependsOn "runTests-" + outputFileName
+  testAll.dependsOn "diff-" + outputFileName
+}
