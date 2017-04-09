@@ -13,24 +13,14 @@
 
 #endif
 
-class pair_greater_by_first {
- private:
-  std::greater<long> my_greater;
- public:
-  bool operator()(const std::pair<long, long> &left,
-                  const std::pair<long, long> &right) {
-    return my_greater(left.first, right.first);
-  }
-};
-
 void solve(int t) {
   long N, K;
   std::cin >> N >> K;
   TRACE_LINE(":: " << N << ", " << K << " ::");
-  std::map<long, long, std::greater<long>> pieces;
+  std::map<long, long> pieces;
   pieces.emplace(N, 1);
   while(true) {
-    std::pair<long, long> biggest_pair = *pieces.begin();
+    std::pair<long, long> biggest_pair = *pieces.rbegin();
     long length = biggest_pair.first;
     long count = biggest_pair.second;
     long left = (length - 1) / 2;
@@ -41,14 +31,8 @@ void solve(int t) {
       return;
     }
     pieces.erase(length);
-    auto left_it = pieces.find(left);
-    if(left_it == pieces.end()) {
-      pieces.emplace(left, count);
-    } else left_it->second += count;
-    auto right_it = pieces.find(right);
-    if(right_it == pieces.end()) {
-      pieces.emplace(right, count);
-    } else right_it->second += count;
+    pieces[left] += count;
+    pieces[right] += count;
     K -= count;
   }
 }
