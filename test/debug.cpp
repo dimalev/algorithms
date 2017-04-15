@@ -14,3 +14,11 @@
 
 #define TRACE_LINE(message) \
   std::cerr << message << std::endl;
+
+#ifdef UNITS
+#define UNIT_TESTS() \
+  unit_test();       \
+  return 0;
+#else
+#define UNIT_TESTS()
+#endif
