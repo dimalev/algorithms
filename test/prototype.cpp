@@ -1,20 +1,27 @@
 #include <iostream>
 
+#ifdef UNITS
+#include "../test/units.cpp"
+#endif
+
 #ifdef ALGO_DEBUG
 #include "../test/debug.cpp"
 #else
-
 #define TRACE(message)
 #define TRACE_LINE(message)
 #define ASSERT(expr)
-#define UNIT_TESTS()
-
 #endif
 
+#ifdef UNITS
 void unit_tests() {
+  test_header("test units");
 }
+#endif
 
 int main() {
-  UNIT_TESTS();
+#ifdef UNITS
+  unit_tests();
+  return 0;
+#endif
   return 0;
 }
