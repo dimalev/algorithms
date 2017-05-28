@@ -1,0 +1,4 @@
+4
+abac
+15
+ababcababacabbc

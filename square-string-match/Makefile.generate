@@ -1,0 +1,29 @@
+.PHONY: output-* units start release
+
+# add units here, in case if you would like to run unit tests as part of usual routine
+start: generate-debug.o output-*
+
+release: generate.o
+
+units: generate-units.o
+	./generate-units.o < fixtures-generate.txt > output.txt 2> log.txt && \
+  echo -e "\nInput:" && cat fixtures-generate.txt && \
+  echo -e "\nOutput:" && cat output.txt && \
+  echo -e "\n\nLog:\n" && cat log.txt && \
+  echo -e "\nDiff:" && diff -w output.txt units-generate-output.txt && echo -e "\nUnit Tests OK"
+
+generate-debug.o: generate.cpp
+	g++ -DALGO_DEBUG -O2 -fno-stack-limit -x c++ -std=c++11 generate.cpp -o generate-debug.o
+
+generate-units.o: generate.cpp
+	g++ -DALGO_DEBUG -DUNITS -O2 -fno-stack-limit -x c++ -std=c++11 generate.cpp -o generate-units.o
+
+generate.o: generate.cpp
+	g++ -O2 -fno-stack-limit -x c++ -std=c++11 generate.cpp -o generate.o
+
+output-*: $(subst output,input,$@)
+	./generate-debug.o < $(subst output,input,$@) > output.txt 2> log.txt && \
+  echo -e "\nInput:" && cat $(subst output,input,$@) && \
+  echo -e "\nOutput:" && cat output.txt && \
+  echo -e "\n\nLog:\n" && cat log.txt && \
+  echo -e "\nDiff:" && diff -w output.txt $@ && echo -e "\nTest OK"
