@@ -34,16 +34,26 @@ public class Benchmark {
 
     public static void main(String... argv) {
         Test test = null;
+        Test testBig = null;
         try {
             test = fromFile(
-                Paths.get("tests", "input-0.txt").toFile(),
-                Paths.get("tests", "output-0.txt").toFile()
+                Paths.get("tests", "input-1.txt").toFile(),
+                Paths.get("tests", "output-1.txt").toFile()
+            );
+            testBig = fromFile(
+                Paths.get("tests", "input-2.txt").toFile(),
+                Paths.get("tests", "output-2.txt").toFile()
             );
         } catch(IOException ioex) {
             System.err.println("Unable to initialize tests");
             return;
         }
-        System.out.println("Runtime: " + time(new QuickFind(test.N), test));
+        // System.out.println("Runtime: " + time(new QuickFind(test.N), test));
+        System.out.println("Runtime: " + time(new QuickUnion(test.N), test));
+        System.out.println("Runtime: " + time(new QuickUnionImproved(test.N), test));
+        System.out.println("Big:");
+        System.out.println("Runtime: " + time(new QuickUnion(testBig.N), testBig));
+        // System.out.println("Runtime: " + time(new QuickUnionImproved(testBig.N), testBig));
     }
 
     public static long time(UF algo, Test test) {
@@ -57,7 +67,7 @@ public class Benchmark {
             case 1:
                 boolean res = algo.connected(test.data[i][1], test.data[i][2]);
                 if(res != (test.data[i][3] == 1)) {
-                    throw new Error("Algorithm Failed!");
+                    throw new Error("Algorithm Failed! " + i);
                 }
                 break;
             }
