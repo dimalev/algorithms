@@ -7,12 +7,14 @@ import java.util.Collections;
 
 public class GenRandomTest {
   public static void main(String... argv) {
-    if(argv.length < 4) {
+    if(argv.length < 6) {
       System.out.println("java GenRandomTest " +
                          "%number-of-verticies " +
                          "%number-of-groups " +
                          "%number-of-verticies-per-group " +
-                         "%true-false-to-shuffle");
+                         "%true-false-to-shuffle " +
+                         "%input-file-name " +
+                         "%output-file-name");
       return;
     }
 
@@ -23,8 +25,8 @@ public class GenRandomTest {
 
     System.out.println("groups: " + G);
 
-    try(PrintWriter inf = new PrintWriter(Paths.get("input.txt").toFile());
-        PrintWriter outf = new PrintWriter(Paths.get("output.txt").toFile())) {
+    try(PrintWriter inf = new PrintWriter(Paths.get(argv[4]).toFile());
+        PrintWriter outf = new PrintWriter(Paths.get(argv[5]).toFile())) {
       inf.println(N);
       inf.println((C - 1) * (G + 1));
       List<List<Integer>> connections = new ArrayList<>();
@@ -39,8 +41,13 @@ public class GenRandomTest {
       }
       for(int i = 1; i < C; ++i) {
         for(int j = 0; j < G; ++j) {
-          inf.println(String.format("0 %d %d", connections.get(j).get(i - 1),
-                                    connections.get(j).get(i)));
+          if(i % 2 == 0) {
+            inf.println(String.format("0 %d %d", connections.get(j).get(i / 2),
+                                      connections.get(j).get(i)));
+          } else {
+            inf.println(String.format("0 %d %d", connections.get(j).get(i),
+                                      connections.get(j).get(i / 3)));
+          }
         }
         if(i % 2 == 0) {
           inf.println(String.format("1 %d %d", connections.get(i % G).get(i / 2),

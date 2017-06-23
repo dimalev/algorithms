@@ -36,24 +36,31 @@ public class Benchmark {
         Test test = null;
         Test testBig = null;
         try {
-            test = fromFile(
-                Paths.get("tests", "input-1.txt").toFile(),
-                Paths.get("tests", "output-1.txt").toFile()
-            );
-            testBig = fromFile(
-                Paths.get("tests", "input-2.txt").toFile(),
-                Paths.get("tests", "output-2.txt").toFile()
-            );
+          System.out.println("Reading test 1...");
+          test = fromFile(
+            Paths.get("tests", "input-1.txt").toFile(),
+            Paths.get("tests", "output-1.txt").toFile()
+          );
+          System.out.println("Reading test 2...");
+          testBig = fromFile(
+            Paths.get("tests", "input-2.txt").toFile(),
+            Paths.get("tests", "output-2.txt").toFile()
+          );
         } catch(IOException ioex) {
-            System.err.println("Unable to initialize tests");
-            return;
+          System.err.println("Unable to initialize tests");
+          return;
         }
-        // System.out.println("Runtime: " + time(new QuickFind(test.N), test));
-        System.out.println("Runtime: " + time(new QuickUnion(test.N), test));
-        System.out.println("Runtime: " + time(new QuickUnionImproved(test.N), test));
-        System.out.println("Big:");
-        System.out.println("Runtime: " + time(new QuickUnion(testBig.N), testBig));
-        // System.out.println("Runtime: " + time(new QuickUnionImproved(testBig.N), testBig));
+        System.out.println();
+        System.out.println("\tQF\tQU\tQUi");
+
+        System.out.print("1e" + Math.round(Math.log10(test.N)));
+        System.out.print("\t" + time(new QuickFind(test.N), test));
+        System.out.print("\t" + time(new QuickUnion(test.N), test));
+        System.out.println("\t" + time(new QuickUnionImproved(test.N), test));
+
+        System.out.print("1e" + Math.round(Math.log10(testBig.N)) + "\tx");
+        System.out.print("\t" + time(new QuickUnion(testBig.N), testBig));
+        System.out.println("\t" + time(new QuickUnionImproved(testBig.N), testBig));
     }
 
     public static long time(UF algo, Test test) {
