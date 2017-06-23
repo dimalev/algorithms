@@ -8,7 +8,7 @@ public class QuickFind implements UF {
     public QuickFind(int N) {
         this.N = N;
         color = new int[N];
-        for(int i = 0; i < N; ++i) {
+        for (int i = 0; i < N; ++i) {
             color[i] = i;
         }
     }
@@ -21,9 +21,9 @@ public class QuickFind implements UF {
     @Override
     public void union(int p, int q) {
         int c = color[p];
-        if(color[q] != c) {
-            for(int i = 0; i < N; ++i) {
-                if(color[i] == c) color[i] = color[q];
+        if (color[q] != c) {
+            for (int i = 0; i < N; ++i) {
+                if (color[i] == c) color[i] = color[q];
             }
         }
     }

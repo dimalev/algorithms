@@ -8,7 +8,7 @@ public class QuickUnion implements UF {
   public QuickUnion(int N) {
     this.N = N;
     prev = new int[N];
-    for(int i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
       prev[i] = i;
     }
   }
@@ -24,7 +24,7 @@ public class QuickUnion implements UF {
   }
 
   protected int root(int p) {
-    while(prev[p] != p) {
+    while (prev[p] != p) {
       p = prev[p];
     }
     return p;

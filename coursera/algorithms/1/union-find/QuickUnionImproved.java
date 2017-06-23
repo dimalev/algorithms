@@ -10,7 +10,7 @@ public class QuickUnionImproved implements UF {
     this.N = N;
     prev = new int[N];
     size = new int[N];
-    for(int i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
       prev[i] = i;
       size[i] = 0;
     }
@@ -25,7 +25,7 @@ public class QuickUnionImproved implements UF {
   public void union(int p, int q) {
     int pr = root(p);
     int qr = root(q);
-    if(size[pr] < size[qr]) {
+    if (size[pr] < size[qr]) {
       prev[pr] = qr;
       size[qr] += size[pr];
     } else {
@@ -35,7 +35,7 @@ public class QuickUnionImproved implements UF {
   }
 
   protected int root(int p) {
-    while(prev[p] != p) {
+    while (prev[p] != p) {
       prev[p] = prev[prev[p]];
       p = prev[p];
     }
