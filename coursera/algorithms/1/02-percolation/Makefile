@@ -1,4 +1,4 @@
-tools=../../tools/
+tools=../../tools
 stdlib=${tools}/algs4.jar
 checkAll=${tools}/check-all.sh
 

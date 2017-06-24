@@ -1,3 +1,7 @@
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.Stopwatch;
+import edu.princeton.cs.algs4.WeightedQuickUnionUF;
+
 public class Benchmark {
     public static class Test {
         public int N;
@@ -36,21 +40,23 @@ public class Benchmark {
           new In("tests/output-2.txt")
         );
         System.out.println();
-        System.out.println("\tQF\tQU\tQUi");
+        System.out.println("\tQF\tQU\tQUi\tWQUUF");
 
         System.out.print("1e" + Math.round(Math.log10(test.N)));
         System.out.print("\t" + time(new QuickFind(test.N), test));
         System.out.print("\t" + time(new QuickUnion(test.N), test));
-        System.out.println("\t" + time(new QuickUnionImproved(test.N), test));
+        System.out.print("\t" + time(new QuickUnionImproved(test.N), test));
+        System.out.println("\t" + time(new Adapter(test.N), test));
 
         System.out.print("1e" + Math.round(Math.log10(testBig.N)) + "\tx");
         System.out.print("\t" + time(new QuickUnion(testBig.N), testBig));
-        System.out.println("\t" + time(new QuickUnionImproved(testBig.N), testBig));
+        System.out.print("\t" + time(new QuickUnionImproved(testBig.N), testBig));
+        System.out.println("\t" + time(new Adapter(testBig.N), testBig));
     }
 
-    public static long time(UF algo, Test test) {
-        long start = System.currentTimeMillis();
+    public static double time(UF algo, Test test) {
         int l = test.data.length;
+        Stopwatch watch = new Stopwatch();
         for (int i = 0; i < l; ++i) {
             switch(test.data[i][0]) {
             case 0:
@@ -64,7 +70,22 @@ public class Benchmark {
                 break;
             }
         }
-        long end = System.currentTimeMillis();
-        return end - start;
+        return watch.elapsedTime();
     }
+
+  static class Adapter implements UF {
+    private final WeightedQuickUnionUF algo;
+
+    public Adapter(int size) {
+      algo = new WeightedQuickUnionUF(size);
+    }
+
+    public void union(int p, int q) {
+      algo.union(p, q);
+    }
+
+    public boolean connected(int p, int q) {
+      return algo.connected(p, q);
+    }
+  }
 }

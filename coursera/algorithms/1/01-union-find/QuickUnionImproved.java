@@ -12,7 +12,7 @@ public class QuickUnionImproved implements UF {
     size = new int[N];
     for (int i = 0; i < N; ++i) {
       prev[i] = i;
-      size[i] = 0;
+      size[i] = 1;
     }
   }
 
@@ -25,6 +25,7 @@ public class QuickUnionImproved implements UF {
   public void union(int p, int q) {
     int pr = root(p);
     int qr = root(q);
+    if(pr == qr) return;
     if (size[pr] < size[qr]) {
       prev[pr] = qr;
       size[qr] += size[pr];
@@ -36,7 +37,7 @@ public class QuickUnionImproved implements UF {
 
   protected int root(int p) {
     while (prev[p] != p) {
-      prev[p] = prev[prev[p]];
+      //      prev[p] = prev[prev[p]];
       p = prev[p];
     }
     return p;

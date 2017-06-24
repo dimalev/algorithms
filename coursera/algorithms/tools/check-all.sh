@@ -21,5 +21,5 @@ ${script_dir}/findbugs-3.0.1/bin/findbugs \
              -home ${script_dir}/findbugs-3.0.1/ \
              -textui -include ${script_dir}/findbugs-coursera.xml \
              -sourcepath $1 \
-             -auxclasspath ${script_dir}/stdlib.jar \
+             -auxclasspath ${script_dir}/algs4.jar \
              $1/*.class

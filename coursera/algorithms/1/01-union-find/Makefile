@@ -1,5 +1,5 @@
-tools=../../tools/
-stdlib=${tools}/stdlib.jar
+tools=../../tools
+stdlib=${tools}/algs4.jar
 checkAll=${tools}/check-all.sh
 
 javaOpts=-cp ${stdlib}:.
