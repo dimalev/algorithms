@@ -9,7 +9,7 @@ javaOpts=-cp ${stdlib}:.
 all: check-all gen-tests bench
 	echo "Done"
 
-check-all:
+check-all: *.class
 	${checkAll} .
 
 gen-tests: GenRandomTest.class
