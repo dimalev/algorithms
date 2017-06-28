@@ -59,7 +59,16 @@ public class Point implements Comparable<Point> {
      * @return the slope between this point and the specified point
      */
     public double slopeTo(Point that) {
-        return (that.x - x) / (that.y - y);
+      boolean horizontal = that.y == y;
+      boolean vertical = that.x == x;
+      if (horizontal) {
+        if (vertical) {
+          return Double.NEGATIVE_INFINITY;
+        }
+        return 0;
+      }
+      if (vertical) return Double.POSITIVE_INFINITY;
+      return (double) (that.y - y) / (double) (that.x - x);
     }
 
     /**
@@ -75,7 +84,11 @@ public class Point implements Comparable<Point> {
      *         argument point
      */
     public int compareTo(Point that) {
-        /* YOUR CODE HERE */
+      if (y < that.y) return -1;
+      if (y > that.y) return 1;
+      if (x < that.x) return -1;
+      if (x > that.x) return 1;
+      return 0;
     }
 
     /**
@@ -85,7 +98,7 @@ public class Point implements Comparable<Point> {
      * @return the Comparator that defines this ordering on points
      */
     public Comparator<Point> slopeOrder() {
-        /* YOUR CODE HERE */
+      return (p1, p2) -> Double.compare(slopeTo(p1), slopeTo(p2));
     }
 
 
@@ -105,6 +118,12 @@ public class Point implements Comparable<Point> {
      * Unit tests the Point data type.
      */
     public static void main(String[] args) {
-        /* YOUR CODE HERE */
+      Point north = new Point(7, 7);
+      Point south = new Point(7, 1);
+      Point west = new Point(10, 4);
+      System.out.printf("%s / %s => %.3f%n", north, south,
+                        north.slopeTo(south));
+      System.out.printf("%s / %s => %.3f%n", north, west,
+                        north.slopeTo(west));
     }
 }

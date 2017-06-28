@@ -9,14 +9,17 @@ javaOpts=-cp ${stdlib}:.
 check-all: *.class
 	${checkAll} .
 
-test-deque: Deque.class
-	java ${javaOpts} Deque
+point: Point.class
+	java ${javaOpts} Point
 
-test-queue: RandomizedQueue.class
-	java ${javaOpts} RandomizedQueue
+brute: BruteCollinearPoints.class LineSegment.class Point.class
+	java ${javaOpts} BruteCollinearPoints ${TEST}
 
-test-permutation: Permutation.class RandomizedQueue.class
-	java ${javaOpts} Permutation ${N} < tests/${TEST}
+fast: FastCollinearPoints.class LineSegment.class Point.class
+	java ${javaOpts} FastCollinearPoints ${TEST}
+
+old-fast: OldFastCollinearPoints.class LineSegment.class Point.class
+	java ${javaOpts} OldFastCollinearPoints ${TEST}
 
 %.class: %.java
 	javac ${javaOpts} $<

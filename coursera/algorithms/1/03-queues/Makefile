@@ -4,7 +4,7 @@ checkAll=${tools}/check-all.sh
 
 javaOpts=-cp ${stdlib}:.
 
-.PHONY: check-all
+.PHONY: check-all test-deque test-queue test-permutation
 
 check-all: *.class
 	${checkAll} .
