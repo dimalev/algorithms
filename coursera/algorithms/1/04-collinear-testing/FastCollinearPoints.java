@@ -17,7 +17,7 @@ public class FastCollinearPoints {
       if (inPoints[i] == null) throw new IllegalArgumentException();
     }
 
-    Point[] points = Arrays.copyOf(inPoints, inPoints.length);
+    Point[] points = Arrays.copyOf(inPoints, count);
     Arrays.sort(points);
     for (int i = 0; i < count - 1; ++i) {
       if (points[i].compareTo(points[i + 1]) == 0)
@@ -26,12 +26,11 @@ public class FastCollinearPoints {
     List<Point> starts = new ArrayList<>();
     List<Point> ends = new ArrayList<>();
     int lines = 0;
-    for (int i = 0; i < count - 3; ++i) {
-      Arrays.sort(points, i, count);
-      Point pivot = points[i];
-      Arrays.sort(points, i + 1, count, points[i].slopeOrder());
-      int j = i + 1;
-      while (j < count - 1) {
+    for (int i = 0; i < count; ++i) {
+      Point pivot = inPoints[i];
+      Arrays.sort(points, 0, count, pivot.slopeOrder());
+      int j = 0;
+      while (j < count) {
         int k = j;
         Point min = pivot.compareTo(points[j]) > 0 ? points[j] : pivot;
         Point max = pivot.compareTo(points[j]) < 0 ? points[j] : pivot;
@@ -41,24 +40,10 @@ public class FastCollinearPoints {
           if (max.compareTo(points[k]) < 0) max = points[k];
           if (min.compareTo(points[k]) > 0) min = points[k];
         }
-        if (k - j + 1 >= 3) {
-          double newSlope = min.slopeTo(max);
-          boolean isRepeat = false;
-          for (int r = 0; !isRepeat  && r < lines; ++r) {
-            if (starts.get(r).slopeTo(ends.get(r)) == newSlope &&
-                (starts.get(r).slopeTo(min) == newSlope ||
-                 min.slopeTo(starts.get(r)) == newSlope ||
-                 min.compareTo(starts.get(r)) == 0)) {
-              if (min.compareTo(starts.get(r)) < 0) starts.set(r, min);
-              if (max.compareTo(ends.get(r)) > 0) ends.set(r, max);
-              isRepeat = true;
-            }
-          }
-          if (!isRepeat) {
-            starts.add(min);
-            ends.add(max);
-            ++lines;
-          }
+        if (min.compareTo(pivot) == 0 && k - j >= 2) {
+          starts.add(min);
+          ends.add(max);
+          ++lines;
         }
         j = k + 1;
       }
