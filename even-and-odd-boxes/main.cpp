@@ -18,15 +18,14 @@ void unit_tests() {
 }
 #endif
 
-void solve(int t) {
-  int n;
+void solve(long t) {
+  long n;
   std::cin >> n;
-  int C[100000];
-  int extra = 0;
-  int both = 0;
-  int even = 0;
-  for(int i = 0; i < n; ++i) {
-    int a;
+  long extra = 0;
+  long both = 0;
+  long even = 0;
+  for(long i = 0; i < n; ++i) {
+    long a;
     std::cin >> a;
     if(a % 2 == i % 2) {
       if(a > 2) even += (a - 1) / 2;
@@ -34,7 +33,7 @@ void solve(int t) {
       if(a > 1) {
         ++both;
         if (a > 2) {
-          even += (a - 1) / 2 - 1;
+          even += a / 2 - 1;
         }
       } else {
         ++extra;
@@ -44,7 +43,6 @@ void solve(int t) {
   TRACE_LINE("evens: " << even);
   TRACE_LINE("both: " << both);
   TRACE_LINE("extra: " << extra);
-  int used = 0;
   if(extra > both) {
     extra -= both;
     if(extra % 2 == 1 || extra > even * 2) {
