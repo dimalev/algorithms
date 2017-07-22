@@ -1,5 +1,8 @@
 #include <iostream>
 
+#define fr(v,s,e) for(int v = s; v < e; ++v)
+#define fl(v,s,e) for(int v = s; v > e; --v)
+
 #ifdef UNITS
 #include "../test/units.cpp"
 #endif

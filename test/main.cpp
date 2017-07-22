@@ -1,5 +1,8 @@
 #include <iostream>
 
+#define fr(v,s,e) for(int v = s; v < e; ++v)
+#define fl(v,s,e) for(int v = s; v > e; --v)
+
 #ifdef UNITS
 #include "../test/units.cpp"
 #endif
@@ -36,5 +39,7 @@ int main() {
   TRACE_LINE("Result = " << sum);
   std::cout << sum;
   TRACE_LINE("We are done");
+  fr(i, 0, 10)
+    std::cout << i << std::endl;
   return 0;
 }
