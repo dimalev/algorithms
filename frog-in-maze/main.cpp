@@ -1,6 +1,8 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+#include <map>
+#include <set>
 #include <cassert>
 
 #ifdef UNITS
@@ -51,23 +53,23 @@ class Mat {
 
   inline int pos(int r, int c) const { return r * _cols + c; }
 
-  T at(int p) const {
+  inline T at(int p) const {
     assert(p < size() && p >= 0);
     return data[p];
   }
 
-  T& at(int p) {
+  inline T& at(int p) {
     assert(p < size() && p >= 0);
     return data[p];
   }
 
-  T at(int r, int c) const {
+  inline T at(int r, int c) const {
     assert(r < _rows && r >= 0);
     assert(c < _cols && c >= 0);
     return data[pos(r, c)];
   }
 
-  T& at(int r, int c) {
+  inline T& at(int r, int c) {
     assert(r < _rows && r >= 0);
     assert(c < _cols && c >= 0);
     return data[pos(r, c)];
@@ -80,11 +82,30 @@ class Mat {
       for(int j = 0; j < right._cols; ++j) {
         result.at(i, j) = 0;
         for(int k = 0; k < _cols; ++k) {
-          result.at(i, j) += at(i, k) * right.at(k, j);
+          result.data[i * result._cols + j] +=
+              data[i * _cols + k] *
+              right.data[k * right._cols + j];
         }
       }
     }
     return result;
+  }
+
+  void square(double **buffer) {
+    double *new_data = *buffer;
+    for(int i = 0; i < _rows; ++i) {
+      for(int j = 0; j < _cols; ++j) {
+        int p = i * _cols + j;
+        new_data[p] = 0;
+        for(int k = 0; k < _cols; ++k) {
+          new_data[p] +=
+              data[i * _cols + k] * data[k * _cols + j];
+        }
+      }
+    }
+    double *temp = data;
+    data = new_data;
+    *buffer = temp;
   }
 
   Mat& operator=(const Mat &right) {
@@ -181,10 +202,10 @@ int main() {
   int rows, cols, pipes_count;
   std::cin >> rows >> cols >> pipes_count;
   std::cin.ignore();
-  Mat<int> start{1, 2};
-  Mat<bool> obstacles{rows, cols}, bombs{rows, cols};
-  Mat<float> ends{rows, cols};
-  Mat<int> pipes{pipes_count, 4};
+  Mat<bool> obstacles{rows, cols}, bombs{rows, cols}, pipe_start{rows, cols};
+  Mat<double> ends{rows, cols};
+  Mat<double> current{rows * cols, 1};
+  Mat<double> move{current.size(), current.size()};
   for(int r = 0; r < rows; ++r) {
     char line[21];
     std::cin.getline(line, cols + 1);
@@ -197,75 +218,80 @@ int main() {
           bombs.at(r, c) = true;
           break;
         case 'A':
-          start.at(0) = r;
-          start.at(1) = c;
+          current.at(ends.pos(r, c)) = 1.0;
           break;
         case '%':
           ends.at(r, c) = 1.0;
-          bombs.at(r, c) = true;
           break;
       }
     }
   }
-  std::cin >> pipes;
+  std::map<int, int> pipes;
   for(int i = 0; i < pipes_count; ++i) {
-    // for all pipe bottoms - we treat it like bomb - no way OUT of it
-    bombs.at(pipes.at(i, 0) - 1, pipes.at(i, 1) - 1) = true;
+    int rs, cs, re, ce;
+    std::cin >> rs >> cs >> re >> ce;
+    pipes[ends.pos(rs - 1, cs - 1)] = ends.pos(re - 1, ce - 1);
+    pipes[ends.pos(re - 1, ce - 1)] = ends.pos(rs - 1, cs - 1);
   }
-  Mat<int> paths{rows, cols};
   for(int r = 0; r < rows; ++r) {
     for(int c = 0; c < cols; ++c) {
-      if(obstacles.at(r, c)) continue;
-      if(r > 0 && !obstacles.at(r - 1, c))
-        ++paths.at(r - 1, c);
-      if(r < rows - 1 && !obstacles.at(r + 1, c))
-        ++paths.at(r + 1, c);
-      if(c > 0 && !obstacles.at(r, c - 1))
-        ++paths.at(r, c - 1);
-      if(c < cols - 1 && !obstacles.at(r, c + 1))
-        ++paths.at(r, c + 1);
-    }
-  }
-
-  // std::cout << paths << std::endl;
-
-  Mat<float> current{rows * cols, 1};
-  Mat<float> move{rows * cols, rows * cols};
-  for(int r = 0; r < rows; ++r) {
-    for(int c = 0; c < cols; ++c) {
-      if(obstacles.at(r, c)) continue;
       int p = ends.pos(r, c);
-      if(r > 0 && !obstacles.at(r - 1, c) && ! bombs.at(r - 1, c))
-        move.at(p, ends.pos(r - 1, c)) = 1.0 / paths.at(r - 1, c);
-      if(r < rows - 1 && !obstacles.at(r + 1, c) && !bombs.at(r + 1, c))
-        move.at(p, ends.pos(r + 1, c)) = 1.0 / paths.at(r + 1, c);
-      if(c > 0 && !obstacles.at(r, c - 1) && !bombs.at(r, c - 1))
-        move.at(p, ends.pos(r, c - 1)) = 1.0 / paths.at(r, c - 1);
-      if(c < cols - 1 && !obstacles.at(r, c + 1) && !bombs.at(r, c + 1))
-        move.at(p, ends.pos(r, c + 1)) = 1.0 / paths.at(r, c + 1);
-      if(bombs.at(r, c)) {
+      if(obstacles.at(p)) continue;
+      if(ends.at(p) || bombs.at(p)) {
         move.at(p, p) = 1.0;
+        continue;
+      }
+      std::set<int> neigbours;
+      if(r > 0 && !obstacles.at(r - 1, c)) {
+        int e = ends.pos(r - 1, c);
+        if(pipes.find(e) != pipes.end()) {
+          neigbours.insert(pipes[e]);
+        } else {
+          neigbours.insert(e);
+        }
+      }
+      if(r < rows - 1 && !obstacles.at(r + 1, c)) {
+        int e = ends.pos(r + 1, c);
+        if(pipes.find(e) != pipes.end()) {
+          neigbours.insert(pipes[e]);
+        } else {
+          neigbours.insert(e);
+        }
+      }
+      if(c > 0 && !obstacles.at(r, c - 1)) {
+        int e = ends.pos(r, c - 1);
+        if(pipes.find(e) != pipes.end()) {
+          neigbours.insert(pipes[e]);
+        } else {
+          neigbours.insert(e);
+        }
+      }
+      if(c < cols - 1 && !obstacles.at(r, c + 1)) {
+        int e = ends.pos(r, c + 1);
+        if(pipes.find(e) != pipes.end()) {
+          neigbours.insert(pipes[e]);
+        } else {
+          neigbours.insert(e);
+        }
+      }
+      // TRACE(r << ", " << c << ": ");
+      if(neigbours.empty()) {
+        move.at(p, p) = 1.0;
+        // TRACE_LINE("empty");
+      } else {
+        double v = 1.0 / neigbours.size();
+        for(auto out : neigbours) {
+          move.at(out, p) = v;
+        }
       }
     }
   }
-  for(int i = 0; i < pipes_count; ++i) {
-    int from = ends.pos(pipes.at(i, 0) - 1, pipes.at(i, 1) - 1);
-    int to = ends.pos(pipes.at(i, 2) - 1, pipes.at(i, 3) - 1);
-    for(int j = 0; j < current.size(); ++j) {
-      move.at(to, j) += move.at(from, j);
-    }
+  double *buffer = new double[move.size()];
+  for(int i = 0; i < 17; ++i) {
+    TRACE_LINE(i);
+    move = std::move(move * move);
   }
-  current.at(ends.pos(start.at(0), start.at(1))) = 1.0;
-  // std::cout << "bombs:\n" << bombs;
-  // std::cout << std::setprecision(2);
-  // std::cout << ends.pos(start.at(0), start.at(1)) << " : " << start << std::endl;
-  // std::cout << current.reshape(rows, cols);
-  // std::cout << std::endl;
-  // for(int i = 0; i < 20; ++i) {
-  //   TRACE_LINE(i);
-  //   move = std::move(move * move);
-  // }
-  current = std::move(move.t() * move * current);
+  current = std::move(move * current);
   TRACE_LINE(current.reshape(rows, cols));
   std::cout << (ends.reshape(1, current.size()) * current);
   return 0;
