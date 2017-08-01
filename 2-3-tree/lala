@@ -1,0 +1,15 @@
+[size=8; orphan; 
+  ([size=3; 
+    ([size=1; leaf; (1 )] 
+     2 
+     [size=1; leaf; (3 )]
+    )
+   ] 
+   4 
+   [size=4; 
+    ([size=2; leaf; (5 8 )] 
+     6 
+     [size=2; leaf; (5 8 )]
+    )
+  ])
+]

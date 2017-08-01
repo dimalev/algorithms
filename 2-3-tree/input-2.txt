@@ -1,0 +1,22 @@
+21
+bigger 5
+add 5
+bigger 5
+add 5
+bigger 4
+add 4
+bigger 4
+add 4
+bigger 3
+add 3
+bigger 3
+add 3
+bigger 2
+add 2
+bigger 2
+add 2
+bigger 1
+add 1
+bigger 1
+add 1
+bigger 1

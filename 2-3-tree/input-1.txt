@@ -1,0 +1,12 @@
+11
+add 5
+add 3
+add 7
+bigger 3
+add 2
+add 5
+bigger 5
+add 12
+add 5
+bigger 5
+bigger 3
