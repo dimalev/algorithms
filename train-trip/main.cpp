@@ -4,8 +4,8 @@
 #include <set>
 #include <queue>
 
-#define fr(v,s,e) for(int v = s; v < e; ++v)
-#define fl(v,s,e) for(int v = s; v > e; --v)
+#define fr(v,s,e) for(long v = s; v < e; ++v)
+#define fl(v,s,e) for(long v = s; v > e; --v)
 
 #ifdef UNITS
 #include "../test/units.cpp"
@@ -27,17 +27,17 @@ void unit_tests() {
 }
 #endif
 
-void fill(std::map<int, std::set<int>> &lines, const int n,
-          const int from, int *d) {
-  std::queue<int> input;
+void fill(std::map<long, std::set<long>> &lines, const long n,
+          const long from, long *d) {
+  std::queue<long> input;
   input.push(from);
-  std::fill_n(d, n, std::numeric_limits<int>::max());
+  std::fill_n(d, n, std::numeric_limits<long>::max());
   d[from] = 0;
-  int left = n - 1;
+  long left = n - 1;
   while(!input.empty() && left > 0) {
-    int top = input.front();
+    long top = input.front();
     input.pop();
-    int l = d[top];
+    long l = d[top];
     for(auto k : lines[top]) {
       if(d[k] > l + 1) {
         input.push(k);
@@ -49,23 +49,23 @@ void fill(std::map<int, std::set<int>> &lines, const int n,
 }
 
 void solve() {
-  int n, c[3], v[3];
+  long n, c[3], v[3];
   std::cin >> n;
   std::cin >> c[0] >> c[1] >> c[2];
   std::cin >> v[0] >> v[1] >> v[2];
   --v[0]; --v[1]; --v[2];
-  std::map<int, std::set<int>> lines;
+  std::map<long, std::set<long>> lines;
   fr(i,0,n-1) {
-    int u,v;
+    long u,v;
     std::cin >> u >> v;
     --u; --v;
     lines[u].insert(v);
     lines[v].insert(u);
   }
-  int *d = new int[n], **V = new int*[3];
+  long *d = new long[n], **V = new long*[3];
   fill(lines, n, 0, d);
   fr(i,0,3) {
-    V[i] = new int[n];
+    V[i] = new long[n];
     fill(lines, n, v[i], V[i]);
   }
   long best = (d[v[0]] + d[v[1]] + d[v[2]]) * c[0];
@@ -77,7 +77,7 @@ void solve() {
     if(next < best) {
       best = next;
     }
-    int *d2 = new int[n];
+    long *d2 = new long[n];
     fill(lines, n, i, d2);
     fr(j,0,3) {
       next = d[i] * c[1] + (V[0][i] + V[1][i] + V[2][i]) * c[0]
@@ -118,7 +118,7 @@ int main() {
   unit_tests();
   return 0;
 #endif
-  int T;
+  long T;
   std::cin >> T;
   fr(t,0,T) solve();
   return 0;
