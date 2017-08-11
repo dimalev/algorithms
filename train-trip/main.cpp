@@ -1,11 +1,12 @@
 #include <iostream>
+#include <cassert>
 #include <limits>
 #include <map>
 #include <set>
 #include <queue>
 
-#define fr(v,s,e) for(long v = s; v < e; ++v)
-#define fl(v,s,e) for(long v = s; v > e; --v)
+#define fr(v,s,e) for(int v = s; v < e; ++v)
+#define fl(v,s,e) for(int v = s; v > e; --v)
 
 #ifdef UNITS
 #include "../test/units.cpp"
@@ -27,23 +28,44 @@ void unit_tests() {
 }
 #endif
 
-void fill(std::map<long, std::set<long>> &lines, const long n,
-          const long from, long *d) {
+void single(std::map<long, std::set<long>> &lines, long n, long cost,
+            long start, long* distance) {
+  std::fill_n(distance, n, -1l);
   std::queue<long> input;
-  input.push(from);
-  std::fill_n(d, n, std::numeric_limits<long>::max());
-  d[from] = 0;
-  long left = n - 1;
-  while(!input.empty() && left > 0) {
+  input.push(start);
+  distance[start] = 0;
+  while(!input.empty()) {
     long top = input.front();
     input.pop();
-    long l = d[top];
+    long l = distance[top];
     for(auto k : lines[top]) {
-      if(d[k] > l + 1) {
+      if(distance[k] == -1) {
         input.push(k);
-        d[k] = l + 1;
-        --left;
+        distance[k] = l + cost;
       }
+    }
+  }
+}
+
+void two(std::map<long, std::set<long>> &lines, long n, long cost,
+            long *one, long *two, long* distance) {
+  std::set<int> nodes;
+  fr(i,0,n) {
+    nodes.insert(i);
+    distance[i] = one[i] + two[i];
+  }
+  while(!nodes.empty()) {
+    auto another_it = nodes.begin();
+    int another = *another_it;
+    nodes.erase(another_it);
+    long best = distance[another];
+    for(auto close : lines[another]) {
+      best = std::min(best, distance[close] + cost);
+    }
+    if(best < distance[another]) {
+      distance[another] = best;
+      for(auto close : lines[another])
+        nodes.insert(close);
     }
   }
 }
@@ -62,55 +84,40 @@ void solve() {
     lines[u].insert(v);
     lines[v].insert(u);
   }
-  long *d = new long[n], **V = new long*[3];
-  fill(lines, n, 0, d);
+  long *V[3];
   fr(i,0,3) {
     V[i] = new long[n];
-    fill(lines, n, v[i], V[i]);
+    single(lines, n, c[0], v[i], V[i]);
   }
-  long best = (d[v[0]] + d[v[1]] + d[v[2]]) * c[0];
-  TRACE_LINE(v[1] << ":");
-  fr(i,0,n) TRACE_LINE(V[1][i]);
-  fr(i, 1, n) {
-    long next = d[i] * c[2] + (V[0][i] + V[1][i] + V[2][i]) * c[0];
-    // TRACE_LINE("all meet in " << i << ": " << next);
-    if(next < best) {
-      best = next;
-    }
-    long *d2 = new long[n];
-    fill(lines, n, i, d2);
-    fr(j,0,3) {
-      next = d[i] * c[1] + (V[0][i] + V[1][i] + V[2][i]) * c[0]
-          - (V[j][i] - V[j][0]) * c[0];
-      // TRACE_LINE("two meet in " << i << " while " << j << " goes alone: " << next);
-      if(next < best) {
-        best = next;
-      }
-      fr(k,1,n) {
-        if(k == i) continue;
-        next = d[k] * c[2] + d2[k] * c[1]
-            + (V[0][i] + V[1][i] + V[2][i]) * c[0]
-            - (V[j][i] - V[j][k]) * c[0];
-        // TRACE_LINE("two meet in " << i << " and they meet " << j << " in " << k << ": " << next);
-        // TRACE_VAR(d[k]);
-        // TRACE_VAR(d2[k]);
-        // TRACE_VAR(V[0][i]);
-        // TRACE_VAR(V[1][i]);
-        // TRACE_VAR(V[2][i]);
-        // TRACE_VAR(V[j][k]);
-        if(next < best) {
-          best = next;
-        }
-      }
-    }
-    delete[] d2;
-  }
-  std::cout << best << std::endl;
-  delete[] d;
+  long *V2[3];
   fr(i,0,3) {
-    delete[] V[i];
+    V2[i] = new long[n];
+    two(lines, n, c[1], V[(i + 1) % 3], V[(i + 2) % 3], V2[i]);
   }
-  delete[] V;
+  long B[n];
+  std::set<long> nodes;
+  fr(i,0,n) {
+    nodes.insert(i);
+    B[i] = V[0][i] + V[1][i] + V[2][i];
+    fr(j,0,3) {
+      B[i] = std::min(V[j][i] + V2[j][i], B[i]);
+    }
+  }
+  while(!nodes.empty()) {
+    auto another_it = nodes.begin();
+    long another = *another_it;
+    nodes.erase(another_it);
+    long best = B[another];
+    for(auto close : lines[another]) {
+      best = std::min(best, B[close] + c[2]);
+    }
+    if(best < B[another]) {
+      B[another] = best;
+      for(auto close : lines[another])
+        nodes.insert(close);
+    }
+  }
+  std::cout << B[0] << std::endl;
 }
 
 int main() {
