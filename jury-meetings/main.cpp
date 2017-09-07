@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <stack>
 #include <algorithm>
 
 #define fr(v,s,e) for(int v = s; v < e; ++v)
@@ -19,13 +20,28 @@
 #endif
 
 struct ticket {
-  int day;
+  int day, owner;
   long long cost;
 };
 
-bool less_day(const ticket& left, const ticket& right) {
-  return left.day < right.day;
-}
+class less_day {
+ public:
+  bool operator()(const ticket& left, const ticket& right) {
+    return left.day < right.day;
+  }
+};
+
+class greater_day {
+ public:
+  bool operator()(const ticket& left, const ticket& right) {
+    return left.day > right.day;
+  }
+};
+
+struct fly {
+  int day;
+  long long cost;
+};
 
 #ifdef UNITS
 void unit_tests() {
@@ -35,97 +51,135 @@ void unit_tests() {
 
 int n, m, k;
 
-void fill(const std::vector<std::vector<ticket>> &tickets, long long (&costs)[10000]) {
-  int index[100000];
-  std::priority_queue<std::pair<int, int>> next;
-  int day = 0;
-  long long cost = 0ll;
-  fr(i,0,n) {
-    index[i] = 0;
-    day = std::max(day, tickets[i][0].day);
-    cost += tickets[i][0].cost;
-    if(tickets[i].size() > 1) {
-      next.emplace(tickets[i][1].day, i);
-    }
-  }
-  while(!next.empty() && next.top().first <= day) {
-    auto pair = next.top();
-    next.pop();
-    int j = pair.second;
-    cost -= tickets[j][index[j]].cost;
-    index[j]++;
-    cost += tickets[j][index[j]].cost;
-    if(tickets[j].size() > index[j] + 1) {
-      next.emplace(tickets[j][index[j] + 1].day, j);
-    }
-  }
-  TRACE_LINE(day << ": " << cost);
-  while(!next.empty()) {
-    auto pair = next.top();
-    int next_day = pair.first;
-    fr(i,day,next_day) costs[i] = cost;
-    TRACE_LINE(day << ": " << cost);
-    while(!next.empty() && next.top().first <= next_day) {
-      auto pair = next.top();
-      next.pop();
-      int j = pair.second;
-      cost -= tickets[j][index[j]].cost;
-      index[j]++;
-      cost += tickets[j][index[j]].cost;
-      if(tickets[j].size() > index[j] + 1) {
-        next.emplace(tickets[j][index[j] + 1].day, j);
-      }
-    }
-    day = next_day;
-  }
-  fr(i,day,10000) costs[i] = cost;
-}
-
 int main() {
 #ifdef UNITS
   unit_tests();
   return 0;
 #endif
-  std::vector<std::vector<ticket>> out, in;
+  std::priority_queue<ticket, std::vector<ticket>, greater_day> out;
+  std::priority_queue<ticket, std::vector<ticket>, less_day> in;
+  std::queue<fly> depart, arrive;
   std::cin >> n >> m >> k;
-  in.resize(n + 1); out.resize(n + 1);
   fr(i,0,m) {
     int d, f, t;
     long long c;
     std::cin >> d >> f >> t >> c;
     if(f == 0) {
-      out[t].push_back({d, c});
-    } else in[f].push_back({d, c});
-  }
-  fr(i,0,n) {
-    if(in[i].size() == 0 || out[i].size() == 0) {
-      std::cout << -1 << std::endl;
-      return 0;
-    }
-    std::sort(in[i].begin(), in[i].end(), less_day);
-    fr(j,1,n) {
-      if(in[i][j].cost > in[i][j - 1].cost)
-        in[i][j].cost = in[i][j - 1].cost;
-    }
-    std::sort(out[i].begin(), out[i].end(), less_day);
-    fr(j,1,n) {
-      if(out[i][j].cost > out[i][j - 1].cost)
-        out[i][j].cost = out[i][j - 1].cost;
+      in.push({d, t - 1, c});
+    } else {
+      out.push({d, f - 1, c});
     }
   }
-  long long cost_in[10000], cost_out[10000];
-  std::fill_n(cost_in, 10000, -1ll);
-  std::fill_n(cost_out, 10000, -1ll);
-  fill(in, cost_in);
-  fill(out, cost_out);
-
-  long long res = -1ll;
-  fr(i,0,1000000-k) {
-    if(cost_in[i] > 0 && cost_out[i + k - 1] > 0) {
-      if(res == -1 || res > cost_in[i] + cost_out[i + k - 1])
-        res = cost_in[i] + cost_out[i + k - 1];
+  int day = 0, count_departed = 0, count_arrived = 0;
+  long long departed[n], arrived[n], cost = 0ll;
+  std::queue<fly> departs;
+  std::stack<fly> arrivals;
+  std::fill_n(departed, n, -1);
+  TRACE_LINE("===== forward");
+  while(!out.empty()) {
+    ticket next_ticket = out.top();
+    TRACE_LINE("process day " << next_ticket.day
+               << " for " << next_ticket.owner
+               << " cost " << next_ticket.cost);
+    out.pop();
+    if(departed[next_ticket.owner] == -1) {
+      ++count_departed;
+      cost += next_ticket.cost;
+      departed[next_ticket.owner] = next_ticket.cost;
+    } else {
+      if(next_ticket.cost < departed[next_ticket.owner]) {
+        cost -= departed[next_ticket.owner];
+        cost += next_ticket.cost;
+        departed[next_ticket.owner] = next_ticket.cost;
+      }
+    }
+    day = next_ticket.day;
+    while(!out.empty() && out.top().day == day) {
+      next_ticket = out.top();
+      out.pop();
+      if(departed[next_ticket.owner] == -1) {
+        ++count_departed;
+        cost += next_ticket.cost;
+        departed[next_ticket.owner] = next_ticket.cost;
+      } else {
+        if(next_ticket.cost < departed[next_ticket.owner]) {
+          cost -= departed[next_ticket.owner];
+          cost += next_ticket.cost;
+          departed[next_ticket.owner] = next_ticket.cost;
+        }
+      }
+    }
+    if(count_departed == n) {
+      TRACE_LINE("depart on " << day << " for " << cost);
+      departs.push({day, cost});
     }
   }
-  std::cout << res << std::endl;
+  std::fill_n(arrived, n, -1);
+  cost = 0ll;
+  TRACE_LINE("===== back");
+  while(!in.empty()) {
+    ticket next_ticket = in.top();
+    TRACE_LINE("process day " << next_ticket.day
+               << " for " << next_ticket.owner
+               << " cost " << next_ticket.cost);
+    in.pop();
+    if(arrived[next_ticket.owner] == -1) {
+      ++count_arrived;
+      cost += next_ticket.cost;
+      arrived[next_ticket.owner] = next_ticket.cost;
+    } else {
+      if(next_ticket.cost < arrived[next_ticket.owner]) {
+        cost -= arrived[next_ticket.owner];
+        cost += next_ticket.cost;
+        arrived[next_ticket.owner] = next_ticket.cost;
+      }
+    }
+    day = next_ticket.day;
+    while(!in.empty() && in.top().day == day) {
+      next_ticket = in.top();
+      in.pop();
+      if(arrived[next_ticket.owner] == -1) {
+        ++count_arrived;
+        cost += next_ticket.cost;
+        arrived[next_ticket.owner] = next_ticket.cost;
+      } else {
+        if(next_ticket.cost < arrived[next_ticket.owner]) {
+          cost -= arrived[next_ticket.owner];
+          cost += next_ticket.cost;
+          arrived[next_ticket.owner] = next_ticket.cost;
+        }
+      }
+    }
+    if(count_arrived == n) {
+      TRACE_LINE("arrive on " << day << " for " << cost);
+      arrivals.push({day, cost});
+    }
+  }
+  fly from = departs.front(), to = arrivals.top();
+  if(departs.empty() || arrivals.empty()) {
+    std::cout << -1 << std::endl;
+    return 0;
+  }
+  departs.pop(); arrivals.pop();
+  while(!arrivals.empty() && to.day - from.day - 1 < k) {
+    to = arrivals.top(); arrivals.pop();
+  }
+  long long min_cost = -1ll;
+  if(to.day - from.day - 1 >= k) {
+    min_cost = to.cost + from.cost;
+    TRACE_LINE("arrive " << to.day << " depart " << from.day << " cost: " << min_cost);
+  }
+  while(!departs.empty()) {
+    from = departs.front(); departs.pop();
+    while(!arrivals.empty() && to.day - from.day - 1 < k) {
+      to = arrivals.top();
+      arrivals.pop();
+    }
+    if(to.day - from.day - 1 >= k && min_cost > to.cost + from.cost) {
+      min_cost = to.cost + from.cost;
+      TRACE_LINE("arrive " << to.day << " depart " << from.day << " cost: " << min_cost);
+    }
+  }
+  std::cout << min_cost << std::endl;
   return 0;
 }
