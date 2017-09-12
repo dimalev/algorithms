@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 
 #define fr(v,s,e) for(int v = s; v < e; ++v)
 #define fl(v,s,e) for(int v = s; v > e; --v)
@@ -61,12 +62,14 @@ void solve(int t) {
   }
   fr(r,0,n) {
     fr(c,0,m) {
-      int mx = std::min(ms, std::min(n - r, m - c) / 2 + std::min(n - r, m - c) % 2);
+      int mx = std::min(ms, std::min(n - r, m - c) / 2 + std::min(n - r, m - c) % 2) - 1;
       fl(s,mx,min) {
         bool can = true;
         long long sum = 0ll;
         fr(d,0,s+1) {
           int l = 2 * (s - d + 1) - 1;
+          assert(c + d + l - 1 < m);
+          assert(r + d + l - 1 < n);
           if(HS[r + d][c + d + l - 1][d] < l) {
             can = false;
             break;
