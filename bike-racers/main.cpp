@@ -74,13 +74,13 @@ int main() {
     while(true) {
       std::vector<int> l(N + M + 2);
       std::fill(l.begin(), l.end(), 0);
-      std::queue<int> next;
-      next.push(source);
+      std::vector<int> next(N + M + 2);
+      next[0] = source;
+      int last = 0;
       l[source] = source;
       int end = -1;
-      while(!next.empty()) {
-        int node = next.front();
-        next.pop();
+      while(last >= 0) {
+        int node = next[last--];
         // forward connections
         for(int node2 : v[node]) {
           TRACE_LINE("push> " << node << " -> " << node2);
@@ -90,7 +90,7 @@ int main() {
               end = node2;
               break;
             }
-            next.push(node2);
+            next[++last] = node2;
           }
         }
         if(end >= 0) break;
@@ -103,7 +103,7 @@ int main() {
               end = node2;
               break;
             }
-            next.push(node2);
+            next[++last] = node2;
           }
         }
         if(end >= 0) break;
