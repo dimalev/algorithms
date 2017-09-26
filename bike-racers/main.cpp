@@ -41,7 +41,7 @@ int main() {
   }
   point_t P[N];
   fr(i,0,N) std::cin >> P[i].first >> P[i].second;
-  point_t B[N];
+  point_t B[M];
   fr(i,0,M) std::cin >> B[i].first >> B[i].second;
   long long D[N][M];
   long long l = -1ll, r = 0ll;
@@ -53,11 +53,11 @@ int main() {
       if(D[i][j] > r) r = D[i][j];
     }
   }
+  int source = 0, sink = N + M + 1;
   while(r - l > 1) {
     long long m = (r + l) >> 1;
     TRACE_LINE(l << " " << m << " " << r);
     std::map<int, std::set<int>> v;
-    int source = 0, sink = N + M + 1;
     fr(i,0,N) {
       v[source].insert(i + 1);
       fr(j,0,M) {
@@ -76,7 +76,7 @@ int main() {
       std::fill(l.begin(), l.end(), 0);
       std::queue<int> next;
       next.push(source);
-      l[source] = 1;
+      l[source] = source;
       int end = -1;
       while(!next.empty()) {
         int node = next.front();
@@ -99,6 +99,10 @@ int main() {
           TRACE_LINE("push< " << node << " -> " << node2);
           if(l[node2] == 0) {
             l[node2] = node;
+            if(node2 == sink) {
+              end = node2;
+              break;
+            }
             next.push(node2);
           }
         }
@@ -118,8 +122,8 @@ int main() {
           if(end > source && end < sink &&
              next_end > source && next_end < sink) ++count;
         } else {
-          c[end].erase(next_end);
-          v[next_end].insert(end);
+          c[next_end].erase(end);
+          v[end].insert(next_end);
           if(end > source && end < sink &&
              next_end > source && next_end < sink) --count;
         }
