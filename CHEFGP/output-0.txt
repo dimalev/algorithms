@@ -1,0 +1,9 @@
+ab
+aba
+abba
+aabaa*a
+a*a*a*a
+aa*aa*a
+aaabaaabaaaba
+aaabaaabaaa*a
+aaabbaaabbaaabba
